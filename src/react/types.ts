@@ -27,8 +27,13 @@ export interface ModelSettingsText {
   save: string;
   saving: string;
   cancel: string;
-  connected: string;
-  disconnected: string;
+  close: string;
+  authConfigured: string;
+  authUnconfigured: string;
+  authError: string;
+  noProviders: string;
+  noModels: string;
+  retry: string;
   loading: string;
 }
 

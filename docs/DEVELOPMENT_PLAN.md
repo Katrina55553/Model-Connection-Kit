@@ -499,13 +499,15 @@ const adapter = createPiAiAdapter({ models, credentials });
 - Mock 可模拟授权事件、prompt、延迟、失败与取消，并分别展示认证状态和真实探测状态。
 - 阶段 4 tracer bullet：Pi AI provider/model 读取、指定 provider 的 API Key 凭证写入、认证状态、最小真实探测和自定义 OpenAI-compatible provider。
 - 本地 OpenAI-compatible SSE 测试服务已验证无认证自定义接口的注册、模型选择和最多 1 token 的真实请求链路；该测试不进入默认测试套件。
+- 阶段 5 完整设置面板：Radix Tabs/Select/Dialog、CSS Modules、受控弹窗、加载/空目录/错误重试、认证/探测状态和底部操作区。
+- 组件测试覆盖 Escape、焦点陷阱与回收、provider 切换清理失效模型，以及快速重复保存的并发保护。
 
 尚未完成：
 
-- 完整 Dialog、完整认证交互、自定义接口安全策略、Pi AI provider 扩展和发布文档。
-- 阶段 5 之后的完整组件、适配器扩展和回归验证。
+- 完整认证交互、自定义接口安全策略、Pi AI provider 扩展和发布文档。
+- 阶段 6 之后的认证、适配器扩展和回归验证。
 
-阶段 0 至阶段 4 已完成；下一步执行阶段 5，不跳阶段。
+阶段 0 至阶段 5 已完成；下一步执行阶段 6，不跳阶段。
 
 ## 13. 阶段 0 基线决策
 

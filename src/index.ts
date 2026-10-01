@@ -32,6 +32,7 @@ export type {
   ProviderSummary,
 } from "./core/types";
 export type { MockAdapterOptions } from "./adapters/mock";
+export { ModelSettingsDialog } from "./react/model-settings-dialog";
 export { ModelSettingsPanel } from "./react/model-settings-panel";
 export { enUSText, zhCNText } from "./react/text";
 export type {

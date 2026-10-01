@@ -20,7 +20,7 @@ describe("ModelSettingsPanel", () => {
     );
 
     const keyInput = await screen.findByLabelText("API Key");
-    await waitFor(() => expect(screen.getByLabelText("模型")).toHaveValue("gpt-text"));
+    await waitFor(() => expect(screen.getByLabelText("模型")).toHaveTextContent("GPT Text"));
     await user.type(keyInput, "top-secret");
     await user.click(screen.getByRole("button", { name: "连接" }));
     await waitFor(() => expect(keyInput).toHaveValue(""));
@@ -94,5 +94,95 @@ describe("ModelSettingsPanel", () => {
       modelId: "local-model",
     });
     expect(JSON.stringify(onSave.mock.calls[0]?.[0])).not.toContain("local-secret");
+  });
+
+  it("prevents concurrent saves even before the disabled state renders", async () => {
+    let finishSave: (() => void) | undefined;
+    const onSave = vi.fn(
+      () => new Promise<void>((resolve) => {
+        finishSave = resolve;
+      }),
+    );
+    render(
+      <ModelSettingsPanel
+        adapter={createMockModelSettingsAdapter()}
+        defaultMode="custom"
+        onSave={onSave}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText("模型 ID"), { target: { value: "local-model" } });
+    const save = screen.getByRole("button", { name: "保存" });
+    fireEvent.click(save);
+    fireEvent.click(save);
+    expect(onSave).toHaveBeenCalledOnce();
+    finishSave?.();
+  });
+
+  it("retries a failed provider catalog", async () => {
+    const base = createMockModelSettingsAdapter();
+    const listProviders = vi
+      .fn<ModelSettingsAdapter["listProviders"]>()
+      .mockRejectedValueOnce(new Error("目录暂不可用"))
+      .mockImplementation((options) => base.listProviders(options));
+    render(
+      <ModelSettingsPanel adapter={{ ...base, listProviders }} onSave={vi.fn()} />,
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("目录暂不可用");
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    await waitFor(() => expect(screen.getByLabelText("服务商")).toHaveTextContent("OpenAI Codex"));
+    expect(listProviders).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows an explicit empty provider state", async () => {
+    const base = createMockModelSettingsAdapter();
+    render(
+      <ModelSettingsPanel
+        adapter={{ ...base, listProviders: async () => [] }}
+        onSave={vi.fn()}
+      />,
+    );
+
+    expect(await screen.findAllByText("没有支持此认证方式的服务商")).not.toHaveLength(0);
+    expect(screen.getByLabelText("服务商")).toBeDisabled();
+  });
+
+  it("clears an invalid model when the provider changes", async () => {
+    const user = userEvent.setup();
+    const providers = [
+      {
+        id: "alpha",
+        name: "Alpha",
+        auth: { apiKey: { label: "Alpha key", interactive: true } },
+      },
+      {
+        id: "beta",
+        name: "Beta",
+        auth: { apiKey: { label: "Beta key", interactive: true } },
+      },
+    ];
+    const base = createMockModelSettingsAdapter();
+    const adapter: ModelSettingsAdapter = {
+      ...base,
+      listProviders: async () => providers,
+      listModels: async ({ providerId }) => [
+        {
+          id: `${providerId}-model`,
+          providerId,
+          name: `${providerId.toUpperCase()} Model`,
+          input: ["text"],
+          reasoning: false,
+          contextWindow: 8_192,
+          maxTokens: 2_048,
+        },
+      ],
+    };
+    render(<ModelSettingsPanel adapter={adapter} defaultMode="api-key" onSave={vi.fn()} />);
+
+    await waitFor(() => expect(screen.getByLabelText("模型")).toHaveTextContent("ALPHA Model"));
+    await user.click(screen.getByLabelText("服务商"));
+    await user.click(await screen.findByRole("option", { name: "Beta" }));
+    await waitFor(() => expect(screen.getByLabelText("模型")).toHaveTextContent("BETA Model"));
+    expect(screen.getByLabelText("模型")).not.toHaveTextContent("ALPHA Model");
   });
 });
