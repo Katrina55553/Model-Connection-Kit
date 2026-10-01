@@ -29,7 +29,8 @@ The detailed architecture, contracts, security boundaries, and staged implementa
 
 - TypeScript and Vite library structure with locked dependencies
 - Verified ESM dual-entry build, declarations, and standalone CSS output
-- Draft core types and model capability filtering
+- Public adapter contracts with non-secret discriminated selections
+- Catalog normalization, capability filtering, and compile-time safety tests
 - Development plan reviewed against Pi AI's authentication model
 - React components and runtime adapters are not implemented yet
 

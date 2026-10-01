@@ -1,21 +1,38 @@
 export { filterModelsByCapabilities } from "./core/filter-models";
+export { AdapterError, isAdapterError } from "./core/adapter-error";
+export {
+  normalizeModel,
+  normalizeModels,
+  normalizeProvider,
+  normalizeProviders,
+} from "./core/normalize-catalog";
 export type {
-  AdapterOperationOptions,
+  AdapterErrorCategory,
   AuthEvent,
+  AuthMethod,
+  AuthPrompt,
+  AuthStatus,
+  BuiltinConnectionRequest,
+  ConnectOptions,
   ConnectResult,
-  ConnectionMethod,
+  ConnectionType,
   ConnectionRequest,
-  ConnectionStatus,
+  CustomConnectionRequest,
   CustomEndpointConfig,
   ListModelsOptions,
+  ListProvidersOptions,
   ModelCapability,
+  ModelCost,
+  ModelMetadata,
   ModelSelection,
   ModelSettingsAdapter,
   ModelSummary,
+  ProbeStatus,
   ProviderSummary,
 } from "./core/types";
 export type {
   ModelSettingsDialogProps,
+  ModelSettingsMode,
   ModelSettingsPanelProps,
   ModelSettingsText,
 } from "./react/types";

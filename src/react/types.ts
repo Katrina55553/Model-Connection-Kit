@@ -1,16 +1,17 @@
 import type { ReactNode } from "react";
 import type {
-  ConnectionMethod,
   ModelCapability,
   ModelSelection,
   ModelSettingsAdapter,
 } from "../core/types";
 
+export type ModelSettingsMode = "subscription" | "api-key" | "custom";
+
 export interface ModelSettingsText {
   eyebrow: string;
   title: string;
   description: string;
-  methods: Record<ConnectionMethod, string>;
+  methods: Record<ModelSettingsMode, string>;
   providerLabel: string;
   modelLabel: string;
   capabilityHint: string;
@@ -34,7 +35,7 @@ export interface ModelSettingsText {
 export interface ModelSettingsPanelProps {
   adapter: ModelSettingsAdapter;
   value?: ModelSelection | null;
-  defaultMethod?: ConnectionMethod;
+  defaultMode?: ModelSettingsMode;
   requiredCapabilities?: readonly ModelCapability[];
   text?: Partial<ModelSettingsText>;
   onChange?: (selection: ModelSelection) => void;
