@@ -1,0 +1,46 @@
+{
+  "name": "model-connection-kit",
+  "version": "0.1.0",
+  "description": "Reusable React components for configuring AI model connections.",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./pi-ai": {
+      "types": "./dist/pi-ai.d.ts",
+      "import": "./dist/pi-ai.js"
+    },
+    "./styles.css": "./dist/model-connection-kit.css"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "preview": "vite preview"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": ">=0.99.2",
+    "react": ">=18.2.0",
+    "react-dom": ">=18.2.0"
+  },
+  "peerDependenciesMeta": {
+    "@earendil-works/pi-ai": {
+      "optional": true
+    }
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "dist",
+    "types": []
+  },
+  "include": ["src/index.ts", "src/pi-ai.ts", "src/core/**/*.ts", "src/react/**/*.ts", "src/react/**/*.tsx", "src/adapters/pi-ai/**/*.ts"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
+}
