@@ -1,0 +1,32 @@
+body {
+  margin: 0;
+  background: #f3f1f8;
+}
+
+.demo-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 680px) minmax(260px, 420px);
+  gap: 28px;
+  align-items: start;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.demo-shell aside {
+  padding: 22px;
+  background: white;
+  border-radius: 18px;
+  font: 14px/1.5 ui-monospace, monospace;
+}
+
+.demo-shell pre {
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 860px) {
+  .demo-shell {
+    grid-template-columns: 1fr;
+  }
+}

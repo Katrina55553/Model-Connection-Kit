@@ -1,4 +1,5 @@
 export { filterModelsByCapabilities } from "./core/filter-models";
+export { createMockModelSettingsAdapter } from "./adapters/mock";
 export { AdapterError, isAdapterError } from "./core/adapter-error";
 export {
   normalizeModel,
@@ -30,6 +31,9 @@ export type {
   ProbeStatus,
   ProviderSummary,
 } from "./core/types";
+export type { MockAdapterOptions } from "./adapters/mock";
+export { ModelSettingsPanel } from "./react/model-settings-panel";
+export { enUSText, zhCNText } from "./react/text";
 export type {
   ModelSettingsDialogProps,
   ModelSettingsMode,

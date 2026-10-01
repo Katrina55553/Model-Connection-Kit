@@ -495,13 +495,15 @@ const adapter = createPiAiAdapter({ models, credentials });
 - 阶段 1 项目脚手架：依赖与 lockfile、Vite/TypeScript/Vitest 配置、双入口构建、声明文件和独立 CSS 产物。
 - 阶段 2 核心类型与纯逻辑：判别联合、适配器契约、认证/探测状态、错误分类、目录归一化和能力过滤。
 - 编译期类型测试保证选择值不包含 API Key、重复 `modelId` 或内置/自定义混合配置。
+- 阶段 3 Mock Adapter、三种连接流程的最小设置面板和浏览器演示。
+- Mock 可模拟授权事件、prompt、延迟、失败与取消，并分别展示认证状态和真实探测状态。
 
 尚未完成：
 
-- React 组件、样式、mock adapter、Pi AI adapter 和演示页。
-- 阶段 3 之后的组件、适配器和回归验证。
+- Pi AI adapter、完整 Dialog、完整认证交互、自定义接口安全策略和发布文档。
+- 阶段 4 之后的真实适配器、完整组件和回归验证。
 
-阶段 0 至阶段 2 已完成；下一步执行阶段 3，不跳阶段。
+阶段 0 至阶段 3 已完成；下一步执行阶段 4，不跳阶段。
 
 ## 13. 阶段 0 基线决策
 

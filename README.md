@@ -31,8 +31,10 @@ The detailed architecture, contracts, security boundaries, and staged implementa
 - Verified ESM dual-entry build, declarations, and standalone CSS output
 - Public adapter contracts with non-secret discriminated selections
 - Catalog normalization, capability filtering, and compile-time safety tests
+- In-memory mock adapter with latency, failure, prompt/event, and cancellation simulation
+- Minimal three-flow React settings panel and browser demo
 - Development plan reviewed against Pi AI's authentication model
-- React components and runtime adapters are not implemented yet
+- Pi AI and production runtime adapters are not implemented yet
 
 ## License
 

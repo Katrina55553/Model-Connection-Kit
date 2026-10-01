@@ -9,3 +9,123 @@
   --mck-radius-control: 12px;
   --mck-shadow-dialog: 0 24px 80px rgb(28 24 50 / 18%);
 }
+
+.mck-panel {
+  box-sizing: border-box;
+  display: grid;
+  gap: 18px;
+  width: min(100%, 680px);
+  padding: 28px;
+  color: var(--mck-color-text);
+  background: var(--mck-color-surface);
+  border: 1px solid var(--mck-color-border);
+  border-radius: var(--mck-radius-panel);
+  font: 14px/1.5 Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.mck-panel h2,
+.mck-panel p {
+  margin: 0;
+}
+
+.mck-panel header {
+  display: grid;
+  gap: 6px;
+}
+
+.mck-eyebrow {
+  color: var(--mck-color-accent);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mck-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 5px;
+  background: var(--mck-color-soft);
+  border-radius: var(--mck-radius-control);
+}
+
+.mck-tabs button,
+.mck-panel footer button {
+  min-height: 40px;
+  padding: 0 14px;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.mck-tabs button[aria-selected="true"] {
+  color: var(--mck-color-accent);
+  background: var(--mck-color-surface);
+  box-shadow: 0 2px 10px rgb(28 24 50 / 8%);
+}
+
+.mck-panel label {
+  display: grid;
+  gap: 7px;
+  font-weight: 600;
+}
+
+.mck-panel input,
+.mck-panel select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  color: inherit;
+  background: var(--mck-color-surface);
+  border: 1px solid var(--mck-color-border);
+  border-radius: var(--mck-radius-control);
+  font: inherit;
+}
+
+.mck-callout {
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  background: var(--mck-color-soft);
+  border-radius: var(--mck-radius-control);
+}
+
+.mck-callout span,
+.mck-billing-note {
+  color: var(--mck-color-muted);
+}
+
+.mck-status,
+.mck-probe {
+  min-height: 21px;
+}
+
+.mck-probe-reachable {
+  color: #247a52;
+}
+
+.mck-probe-unreachable,
+.mck-panel [role="alert"] {
+  color: #a23838;
+}
+
+.mck-panel footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mck-panel footer button:last-child {
+  color: white;
+  background: var(--mck-color-accent);
+}
+
+.mck-panel button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
