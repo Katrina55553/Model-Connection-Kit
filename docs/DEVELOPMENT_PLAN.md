@@ -502,17 +502,31 @@ const adapter = createPiAiAdapter({ models, credentials });
 - React 组件、样式、mock adapter、Pi AI adapter 和演示页。
 - 构建、类型检查与测试验证。
 
-下一步从“阶段 0 的未决项”开始确认，然后执行阶段 1，不跳阶段。
+阶段 0 的基线决策已确认；下一步执行阶段 1，不跳阶段。
 
-## 13. 阶段 0 未决项
+## 13. 阶段 0 基线决策
 
-实施前需要确定：
+以下决策于 2026-10-02 确认，作为第一版实现基线：
 
-1. npm 包名是否最终使用 `model-connection-kit`。
-2. 首批 provider 是否限定为 OpenAI、Anthropic、Google、OpenRouter 和 OpenAI Codex。
-3. 第一个真实接入宿主属于桌面/Node 应用还是浏览器 Web 应用。
-4. 中文是否为默认文案，英文是否作为首个可选文案包。
-5. 真实连通性探测使用哪个最小 prompt、最大 token 数和超时，以及 UI 中采用何种费用提示文案。
-6. 后端代理采用 allowlist 还是由宿主完全实现；组件库只提供校验器和参考实现，不默认开放任意 URL。
+1. npm 包名固定为 `model-connection-kit`。
+2. 首批内置 provider 限定为 OpenAI、Anthropic、Google、OpenRouter 和 OpenAI Codex。
+3. 第一个真实接入宿主为桌面/Node 应用；浏览器演示只使用 mock adapter，不直接承载 Pi AI OAuth 或生产凭证。
+4. 中文为默认文案，英文作为首个可选文案包。
+5. 真实连通性探测使用不包含用户数据的最小提示词，最多生成 1 token，默认 15 秒超时。触发前显示“测试将发送最小请求，可能产生少量费用”。
+6. 后端代理由宿主实现；组件库提供 URL 校验器和 allowlist 参考实现，不默认允许任意目标地址。
 
-这些选择会影响 provider 注册方式、OAuth 承载位置和演示内容，但不会改变“UI 依赖 adapter、秘密由宿主管理”的总体架构。
+这些选择不会改变“UI 依赖 adapter、秘密由宿主管理”的总体架构。若后续更换首个宿主或扩大 provider 范围，应先评估公共 API、安全边界和演示内容。
+
+### 13.1 版本基线
+
+| 项目 | 版本约束 | 说明 |
+| --- | --- | --- |
+| Node.js | `>=22.19.0` | Pi AI 适配器和本项目开发工具；当前开发环境为 Node.js 24 |
+| React / React DOM | `>=18.2.0` | 公共 UI peer dependency，不限制宿主使用 React 19 |
+| TypeScript | `>=5.7.0` | 严格模式与声明文件构建 |
+| Vite | `>=6.0.0` | library mode 双入口构建和演示页 |
+| Vitest | `>=2.1.0` | Core、Adapter 和组件测试 |
+| Radix UI | 当前稳定版 | Dialog、Tabs、Select 等无障碍 primitives；由 lockfile 固定安装结果 |
+| `@earendil-works/pi-ai` | `0.99.2` | 可选 peer dependency；只允许从 `model-connection-kit/pi-ai` 入口引入 |
+
+阶段 1 安装依赖后，以 `package-lock.json` 固定直接和传递依赖；升级 Pi AI 前必须重新核对认证、凭证存储和模型调用接口。
