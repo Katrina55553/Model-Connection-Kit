@@ -33,8 +33,10 @@ The detailed architecture, contracts, security boundaries, and staged implementa
 - Catalog normalization, capability filtering, and compile-time safety tests
 - In-memory mock adapter with latency, failure, prompt/event, and cancellation simulation
 - Minimal three-flow React settings panel and browser demo
+- Pi AI tracer-bullet adapter with injected credential storage and one-token probes
+- OpenAI-compatible static provider creation, verified against a local SSE test server
 - Development plan reviewed against Pi AI's authentication model
-- Pi AI and production runtime adapters are not implemented yet
+- The Pi AI adapter and UI are intentionally still a minimal subset
 
 ## License
 

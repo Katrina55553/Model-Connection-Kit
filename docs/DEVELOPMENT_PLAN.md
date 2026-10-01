@@ -497,13 +497,15 @@ const adapter = createPiAiAdapter({ models, credentials });
 - 编译期类型测试保证选择值不包含 API Key、重复 `modelId` 或内置/自定义混合配置。
 - 阶段 3 Mock Adapter、三种连接流程的最小设置面板和浏览器演示。
 - Mock 可模拟授权事件、prompt、延迟、失败与取消，并分别展示认证状态和真实探测状态。
+- 阶段 4 tracer bullet：Pi AI provider/model 读取、指定 provider 的 API Key 凭证写入、认证状态、最小真实探测和自定义 OpenAI-compatible provider。
+- 本地 OpenAI-compatible SSE 测试服务已验证无认证自定义接口的注册、模型选择和最多 1 token 的真实请求链路；该测试不进入默认测试套件。
 
 尚未完成：
 
-- Pi AI adapter、完整 Dialog、完整认证交互、自定义接口安全策略和发布文档。
-- 阶段 4 之后的真实适配器、完整组件和回归验证。
+- 完整 Dialog、完整认证交互、自定义接口安全策略、Pi AI provider 扩展和发布文档。
+- 阶段 5 之后的完整组件、适配器扩展和回归验证。
 
-阶段 0 至阶段 3 已完成；下一步执行阶段 4，不跳阶段。
+阶段 0 至阶段 4 已完成；下一步执行阶段 5，不跳阶段。
 
 ## 13. 阶段 0 基线决策
 

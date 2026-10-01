@@ -1,2 +1,6 @@
-// Pi AI adapter exports are added in the tracer-bullet stage.
-export {};
+export { createOpenAICompatibleProvider, createPiAiAdapter } from "./adapters/pi-ai";
+export type {
+  CustomModelSelection,
+  PiAiAdapterOptions,
+  PiAiModels,
+} from "./adapters/pi-ai";
