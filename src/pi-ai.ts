@@ -1,2 +1,2 @@
-export { createPiAiAdapter, createOpenAICompatibleProvider } from "./adapters/pi-ai";
-export type { PiAiAdapterOptions, PiAuthPromptHandler } from "./adapters/pi-ai";
+// Pi AI adapter exports are added in the tracer-bullet stage.
+export {};

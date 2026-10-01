@@ -491,18 +491,17 @@ const adapter = createPiAiAdapter({ models, credentials });
 
 已完成：
 
-- 基础 `package.json`、Vite 与 TypeScript 配置。
-- 双入口导出结构。
+- 阶段 0 基线决策。
+- 阶段 1 项目脚手架：依赖与 lockfile、Vite/TypeScript/Vitest 配置、双入口构建、声明文件和独立 CSS 产物。
 - 核心适配器类型初稿；它仍使用旧的 `method`、重复 `modelId` 和单一连接状态，必须在阶段 2 按本文新契约修改，不能视为已冻结公共 API。
 - 模型能力过滤函数及初始单元测试。
 
 尚未完成：
 
-- npm 依赖安装；上一次安装已中止，当前没有 `node_modules` 或 lockfile。
 - React 组件、样式、mock adapter、Pi AI adapter 和演示页。
-- 构建、类型检查与测试验证。
+- 阶段 2 之后的类型、逻辑、组件、适配器和回归验证。
 
-阶段 0 的基线决策已确认；下一步执行阶段 1，不跳阶段。
+阶段 0 和阶段 1 已完成；下一步执行阶段 2，不跳阶段。
 
 ## 13. 阶段 0 基线决策
 

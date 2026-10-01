@@ -6,8 +6,9 @@
     "declaration": true,
     "declarationMap": true,
     "outDir": "dist",
+    "rootDir": "src",
     "types": []
   },
-  "include": ["src/index.ts", "src/pi-ai.ts", "src/core/**/*.ts", "src/react/**/*.ts", "src/react/**/*.tsx", "src/adapters/pi-ai/**/*.ts"],
+  "include": ["src/index.ts", "src/pi-ai.ts", "src/**/*.d.ts", "src/core/**/*.ts", "src/react/**/*.ts", "src/react/**/*.tsx", "src/adapters/pi-ai/**/*.ts"],
   "exclude": ["**/*.test.ts", "**/*.test.tsx"]
 }

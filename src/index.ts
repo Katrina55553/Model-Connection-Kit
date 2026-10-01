@@ -14,10 +14,9 @@ export type {
   ModelSummary,
   ProviderSummary,
 } from "./core/types";
-export { ModelSettingsDialog } from "./react/model-settings-dialog";
-export { ModelSettingsPanel } from "./react/model-settings-panel";
 export type {
   ModelSettingsDialogProps,
   ModelSettingsPanelProps,
   ModelSettingsText,
 } from "./react/types";
+import "./react/styles.css";

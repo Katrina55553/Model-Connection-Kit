@@ -1,0 +1,11 @@
+:root {
+  --mck-color-accent: #8f83e8;
+  --mck-color-text: #262431;
+  --mck-color-muted: #817f8c;
+  --mck-color-border: #e9e7ef;
+  --mck-color-surface: #ffffff;
+  --mck-color-soft: #f7f5ff;
+  --mck-radius-panel: 24px;
+  --mck-radius-control: 12px;
+  --mck-shadow-dialog: 0 24px 80px rgb(28 24 50 / 18%);
+}

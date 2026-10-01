@@ -1,14 +1,14 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
-import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export default defineConfig({
   plugins: [react()],
   build: {
     lib: {
       entry: {
-        index: resolve(__dirname, "src/index.ts"),
-        "pi-ai": resolve(__dirname, "src/pi-ai.ts"),
+        index: fileURLToPath(new URL("./src/index.ts", import.meta.url)),
+        "pi-ai": fileURLToPath(new URL("./src/pi-ai.ts", import.meta.url)),
       },
       formats: ["es"],
       cssFileName: "model-connection-kit",
