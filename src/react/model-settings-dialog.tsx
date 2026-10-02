@@ -17,6 +17,12 @@ export function ModelSettingsDialog({
   const close = text?.close ?? zhCNText.close;
   const previousFocus = useRef<HTMLElement | null>(null);
   const wasOpen = useRef(false);
+  const generation = useRef(0);
+
+  useEffect(() => {
+    generation.current++;
+    return () => { generation.current++; };
+  }, [open]);
 
   useEffect(() => {
     if (open && !wasOpen.current) {
@@ -47,8 +53,9 @@ export function ModelSettingsDialog({
               onOpenChange(false);
             }}
             onSave={async (selection) => {
+              const savedGeneration = generation.current;
               await onSave(selection);
-              onOpenChange(false);
+              if (generation.current === savedGeneration && wasOpen.current) onOpenChange(false);
             }}
             text={text}
           />

@@ -20,8 +20,14 @@ describe("ModelSettingsDialog", () => {
 
     const dialog = await screen.findByRole("dialog");
     await waitFor(() => expect(dialog).toContainElement(document.activeElement as HTMLElement));
-    await user.tab();
-    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    for (let index = 0; index < 20; index += 1) {
+      await user.tab();
+      expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    }
+    for (let index = 0; index < 20; index += 1) {
+      await user.tab({ shift: true });
+      expect(dialog).toContainElement(document.activeElement as HTMLElement);
+    }
 
     await user.keyboard("{Escape}");
     expect(onOpenChange).toHaveBeenCalledWith(false);

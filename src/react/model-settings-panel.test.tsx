@@ -48,12 +48,12 @@ describe("ModelSettingsPanel", () => {
     const onSave = vi.fn();
     render(<ModelSettingsPanel adapter={base} defaultMode="custom" onSave={onSave} />);
     fireEvent.change(screen.getByLabelText("模型 ID"), { target: { value: "local" } });
-    fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "first-endpoint-key" } });
+    fireEvent.change(screen.getByLabelText("API Key", { selector: "input" }), { target: { value: "first-endpoint-key" } });
     fireEvent.click(screen.getByRole("button", { name: "测试连接" }));
     expect(await screen.findByText("最小模型请求成功")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Base URL"), { target: { value: "https://second.example/v1" } });
     expect(screen.queryByText("最小模型请求成功")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("API Key")).toHaveValue("");
+    expect(screen.getByLabelText("API Key", { selector: "input" })).toHaveValue("");
     fireEvent.click(screen.getByRole("button", { name: "保存" }));
     await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
     expect(onSave.mock.calls[0]?.[0]).toMatchObject({ authMethod: "none", providerId: "custom:https://second.example/v1" });
@@ -65,12 +65,12 @@ describe("ModelSettingsPanel", () => {
     const testConnection = vi.fn(base.testConnection);
     render(<ModelSettingsPanel adapter={{ ...base, connect, testConnection }} defaultMode="custom" onSave={vi.fn()} />);
     fireEvent.change(screen.getByLabelText("模型 ID"), { target: { value: "local" } });
-    fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "test-secret" } });
+    fireEvent.change(screen.getByLabelText("API Key", { selector: "input" }), { target: { value: "test-secret" } });
     fireEvent.click(screen.getByRole("button", { name: "测试连接" }));
     await waitFor(() => expect(testConnection).toHaveBeenCalledOnce());
     expect(connect.mock.calls[0]?.[0]).toMatchObject({ apiKey: "test-secret", authMethod: "api-key" });
     expect(testConnection.mock.calls[0]?.[0]).not.toHaveProperty("apiKey");
-    expect(screen.getByLabelText("API Key")).toHaveValue("");
+    expect(screen.getByLabelText("API Key", { selector: "input" })).toHaveValue("");
   });
   it("cancels an OAuth prompt without configuring credentials", async () => {
     const adapter = createMockModelSettingsAdapter({ requireOAuthPrompt: true });
@@ -87,7 +87,7 @@ describe("ModelSettingsPanel", () => {
     const onSave = vi.fn();
     render(<ModelSettingsPanel adapter={createMockModelSettingsAdapter()} defaultMode="custom" onSave={onSave} />);
     fireEvent.change(screen.getByLabelText("模型 ID"), { target: { value: "local" } });
-    const input = screen.getByLabelText("API Key");
+    const input = screen.getByLabelText("API Key", { selector: "input" });
     fireEvent.change(input, { target: { value: "private-key" } });
     expect(input).not.toHaveAttribute("value");
     fireEvent.click(screen.getByRole("button", { name: "连接" }));
@@ -101,7 +101,7 @@ describe("ModelSettingsPanel", () => {
     const base = createMockModelSettingsAdapter();
     render(<ModelSettingsPanel adapter={{ ...base, connect: async () => { throw new Error("拒绝 private-key"); } }} defaultMode="api-key" onSave={vi.fn()} />);
     await waitFor(() => expect(screen.getByLabelText("模型")).toHaveTextContent("GPT Text"));
-    fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "private-key" } });
+    fireEvent.change(screen.getByLabelText("API Key", { selector: "input" }), { target: { value: "private-key" } });
     fireEvent.click(screen.getByRole("button", { name: "连接" }));
     expect(await screen.findByRole("alert")).not.toHaveTextContent("private-key");
   });
@@ -118,7 +118,7 @@ describe("ModelSettingsPanel", () => {
       />,
     );
 
-    const keyInput = await screen.findByLabelText("API Key");
+    const keyInput = await screen.findByLabelText("API Key", { selector: "input" });
     await waitFor(() => expect(screen.getByLabelText("模型")).toHaveTextContent("GPT Text"));
     await user.type(keyInput, "top-secret");
     await user.click(screen.getByRole("button", { name: "连接" }));
@@ -184,7 +184,7 @@ describe("ModelSettingsPanel", () => {
     );
 
     fireEvent.change(screen.getByLabelText("模型 ID"), { target: { value: "local-model" } });
-    fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "local-secret" } });
+    fireEvent.change(screen.getByLabelText("API Key", { selector: "input" }), { target: { value: "local-secret" } });
     fireEvent.click(screen.getByRole("button", { name: "保存" }));
     await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
     expect(onSave.mock.calls[0]?.[0]).toMatchObject({

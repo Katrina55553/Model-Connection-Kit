@@ -82,6 +82,11 @@ export function ModelSettingsPanel({
   className,
 }: ModelSettingsPanelProps) {
   const labels = { ...zhCNText, ...text, methods: { ...zhCNText.methods, ...text?.methods } };
+  const savedCustomModelId = value?.connectionType === "custom" ? value.modelId : "";
+  // Hosts commonly recreate capability arrays on render; catalog reads depend on content.
+  const capabilityKey = [...new Set(requiredCapabilities ?? [])].sort().join(",");
+  const catalogCapabilities = useMemo(() =>
+    (["text", "image"] as const).filter((capability) => capabilityKey.includes(capability)), [capabilityKey]);
   const [mode, setMode] = useState<ModelSettingsMode>(defaultMode ?? modeForSelection(value));
   const [providers, setProviders] = useState<ProviderSummary[]>([]);
   const [models, setModels] = useState<ModelSummary[]>([]);
@@ -105,6 +110,7 @@ export function ModelSettingsPanel({
   const [activePrompt, setActivePrompt] = useState<AuthPrompt | null>(null);
   const [promptSelectValue, setPromptSelectValue] = useState("");
   const promptInputRef = useRef<HTMLInputElement | null>(null);
+  const promptSelectRef = useRef<HTMLSelectElement | null>(null);
   const pendingPrompt = useRef<{
     resolve: (value: string) => void;
     reject: (reason: unknown) => void;
@@ -113,8 +119,15 @@ export function ModelSettingsPanel({
   const [busy, setBusy] = useState<"connect" | "disconnect" | "test" | "save" | null>(null);
   const busyRef = useRef<typeof busy>(null);
   const actionController = useRef<AbortController | null>(null);
+  const authCheckController = useRef<AbortController | null>(null);
   const actionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mounted = useRef(true);
+
+  useEffect(() => {
+    if (!activePrompt) return;
+    if (activePrompt.type === "select") promptSelectRef.current?.focus();
+    else promptInputRef.current?.focus();
+  }, [activePrompt]);
 
   useEffect(() => {
     mounted.current = true;
@@ -134,7 +147,7 @@ export function ModelSettingsPanel({
       setProviders([]);
       setProviderId("custom");
       setModels([]);
-      setModelId(value?.connectionType === "custom" ? value.modelId : "");
+      setModelId(savedCustomModelId);
       setAuthStatus(null);
       setLoadingProviders(false);
       setLoadingModels(false);
@@ -166,26 +179,27 @@ export function ModelSettingsPanel({
         }
       });
     return () => controller.abort();
-  }, [adapter, mode, retryVersion, value]);
+  }, [adapter, mode, retryVersion, savedCustomModelId]);
 
   useEffect(() => {
     if (mode === "custom" || !providerId) return;
     const controller = new AbortController();
+    const authController = new AbortController();
+    authCheckController.current = authController;
+    const preferredModelId = modelId;
     setModels([]);
     setModelId("");
     setAuthStatus(null);
     setLoadingModels(true);
-    void Promise.all([
-      adapter.listModels({ providerId, requiredCapabilities, refresh: retryVersion > 0, signal: controller.signal }),
-      adapter.getAuthStatus(providerId, controller.signal),
-    ])
-      .then(([catalog, status]) => {
+    void adapter.listModels({ providerId, requiredCapabilities: catalogCapabilities, refresh: retryVersion > 0, signal: controller.signal })
+      .then((catalog) => {
         if (controller.signal.aborted) return;
         setModels(catalog);
         setModelId((current) =>
-          catalog.some((model) => model.id === current) ? current : (catalog[0]?.id ?? ""),
+          catalog.some((model) => model.id === current) ? current
+            : catalog.some((model) => model.id === preferredModelId) ? preferredModelId
+              : (catalog[0]?.id ?? ""),
         );
-        setAuthStatus(status);
         setLoadingModels(false);
       })
       .catch((cause: unknown) => {
@@ -194,8 +208,13 @@ export function ModelSettingsPanel({
           setLoadingModels(false);
         }
       });
-    return () => controller.abort();
-  }, [adapter, mode, providerId, requiredCapabilities, retryVersion]);
+    void adapter.getAuthStatus(providerId, authController.signal)
+      .then((status) => { if (!authController.signal.aborted) setAuthStatus(status); })
+      .catch((cause: unknown) => {
+        if (!authController.signal.aborted && !isAbortError(cause)) setAuthStatus({ state: "error", message: redactSensitiveText(cause instanceof Error ? cause.message : "认证状态检查失败") });
+      });
+    return () => { controller.abort(); authController.abort(); };
+  }, [adapter, mode, providerId, catalogCapabilities, retryVersion]);
 
   const selectedProvider = providers.find((provider) => provider.id === providerId);
   const isAmbientOnly =
@@ -256,6 +275,20 @@ export function ModelSettingsPanel({
     pending.reject(reason);
   }
 
+  function cancelCurrentAction() {
+    actionController.current?.abort();
+    if (actionTimer.current) clearTimeout(actionTimer.current);
+    actionTimer.current = null;
+    actionController.current = null;
+    busyRef.current = null;
+    setBusy(null);
+    dismissPrompt();
+    setProbeStatus(null);
+    setEventMessage("");
+    setAuthorizationUrl(null);
+    setError("");
+  }
+
   function submitPrompt() {
     const pending = pendingPrompt.current;
     if (!pending || !activePrompt) return;
@@ -298,6 +331,7 @@ export function ModelSettingsPanel({
     kind: "connect" | "disconnect" | "test" | "save",
   ): AbortController | null {
     if (busyRef.current) return null;
+    if (kind === "connect" || kind === "disconnect") authCheckController.current?.abort();
     const controller = new AbortController();
     actionController.current = controller;
     busyRef.current = kind;
@@ -320,6 +354,8 @@ export function ModelSettingsPanel({
   }
 
   function finishAction(controller: AbortController) {
+    // End this operation's prompt/event lifetime, including successful completions.
+    controller.abort();
     if (actionController.current === controller) {
       if (actionTimer.current) clearTimeout(actionTimer.current);
       actionTimer.current = null;
@@ -480,20 +516,10 @@ export function ModelSettingsPanel({
         className={styles.tabs}
         onValueChange={(nextMode) => {
           if (nextMode === "subscription" || nextMode === "api-key" || nextMode === "custom") {
-              actionController.current?.abort();
-              if (actionTimer.current) clearTimeout(actionTimer.current);
-              actionTimer.current = null;
-              actionController.current = null;
-              busyRef.current = null;
-              setBusy(null);
-              dismissPrompt();
+              cancelCurrentAction();
               setMode(nextMode);
               if (apiKeyRef.current) apiKeyRef.current.value = "";
               setHasApiKey(false);
-              setProbeStatus(null);
-              setEventMessage("");
-              setAuthorizationUrl(null);
-              setError("");
           }
         }}
         value={mode}
@@ -505,7 +531,10 @@ export function ModelSettingsPanel({
             </Tabs.Trigger>
           ))}
         </Tabs.List>
-      </Tabs.Root>
+        {(Object.keys(labels.methods) as ModelSettingsMode[]).filter((item) => item !== mode).map((item) => (
+          <Tabs.Content forceMount hidden key={item} value={item} />
+        ))}
+        <Tabs.Content className={styles.tabPanel} value={mode}>
 
       {mode !== "custom" ? (
         <>
@@ -513,7 +542,13 @@ export function ModelSettingsPanel({
             disabled={loadingProviders || providers.length === 0}
             items={providers}
             label={labels.providerLabel}
-            onValueChange={setProviderId}
+            onValueChange={(nextProviderId) => {
+              cancelCurrentAction();
+              if (apiKeyRef.current) apiKeyRef.current.value = "";
+              setHasApiKey(false);
+              setAuthStatus(null);
+              setProviderId(nextProviderId);
+            }}
             placeholder={loadingProviders ? labels.loading : labels.noProviders}
             value={providerId}
           />
@@ -590,7 +625,7 @@ export function ModelSettingsPanel({
             disabled={loadingModels || models.length === 0}
             items={models}
             label={labels.modelLabel}
-            onValueChange={setModelId}
+            onValueChange={(nextModelId) => { cancelCurrentAction(); setModelId(nextModelId); }}
             placeholder={loadingModels ? labels.loading : labels.noModels}
             value={modelId}
           />
@@ -606,6 +641,7 @@ export function ModelSettingsPanel({
           {activePrompt.type === "select" ? (
             <select
               aria-label={activePrompt.message}
+              ref={promptSelectRef}
               onChange={(event) => setPromptSelectValue(event.target.value)}
               value={promptSelectValue}
             >
@@ -623,7 +659,7 @@ export function ModelSettingsPanel({
             />
           )}
           <div className={styles.promptActions}>
-            <button onClick={() => dismissPrompt()} type="button">{labels.cancel}</button>
+            <button onClick={cancelCurrentAction} type="button">{labels.cancel}</button>
             <button
               disabled={activePrompt.type === "select" && !promptSelectValue}
               onClick={submitPrompt}
@@ -670,7 +706,7 @@ export function ModelSettingsPanel({
           </button>
         )}
         {onCancel && (
-          <button disabled={busy !== null} onClick={onCancel} type="button">
+          <button onClick={() => { cancelCurrentAction(); onCancel(); }} type="button">
             {labels.cancel}
           </button>
         )}
@@ -678,6 +714,8 @@ export function ModelSettingsPanel({
           {busy === "save" ? labels.saving : labels.save}
         </button>
       </footer>
+        </Tabs.Content>
+      </Tabs.Root>
     </section>
   );
 }

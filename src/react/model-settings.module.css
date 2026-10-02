@@ -5,6 +5,11 @@
 .tabs {
   min-width: 0;
 }
+.tabPanel {
+  display: grid;
+  gap: 18px;
+  padding-top: 18px;
+}
 
 .tabTrigger {
   font: inherit;
