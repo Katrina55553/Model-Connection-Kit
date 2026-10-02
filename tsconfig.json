@@ -11,6 +11,10 @@
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "paths": {
+      "model-connection-kit": ["./src/index.ts"],
+      "model-connection-kit/pi-ai": ["./src/pi-ai.ts"]
+    },
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,

@@ -22,11 +22,22 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md",
+    "docs/API.md",
+    "docs/THEMING.md",
+    "docs/PI_AI_ADAPTER.md",
+    "docs/RELEASING.md",
+    "examples/README.md",
+    "examples/backend-proxy.ts",
+    "examples/pi-ai-host.ts",
+    "examples/theme.css"
   ],
   "scripts": {
     "dev": "vite",
     "build": "vite build && tsc -p tsconfig.build.json",
+    "prepack": "npm run build",
+    "verify:package": "node scripts/verify-package.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:integration": "cross-env MCK_INTEGRATION=1 vitest run src/adapters/pi-ai/openai-compatible.integration.test.ts",
@@ -34,7 +45,7 @@
     "preview": "vite preview"
   },
   "peerDependencies": {
-    "@earendil-works/pi-ai": ">=0.99.2",
+    "@earendil-works/pi-ai": "^0.99.2",
     "react": ">=18.2.0",
     "react-dom": ">=18.2.0"
   },
@@ -59,6 +70,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "axe-core": "^4.13.0",
     "cross-env": "^10.1.0",
+    "es-module-lexer": "^2.3.2",
     "jsdom": "^30.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

@@ -4,3 +4,5 @@ dist/
 .vite/
 coverage/
 *.log
+.release-check/
+*.tgz

@@ -4,6 +4,12 @@ import { fileURLToPath } from "node:url";
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: [
+      { find: /^model-connection-kit$/, replacement: fileURLToPath(new URL("./src/index.ts", import.meta.url)) },
+      { find: /^model-connection-kit\/pi-ai$/, replacement: fileURLToPath(new URL("./src/pi-ai.ts", import.meta.url)) },
+    ],
+  },
   build: {
     lib: {
       entry: {

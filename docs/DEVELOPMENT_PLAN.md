@@ -517,13 +517,16 @@ const adapter = createPiAiAdapter({ models, credentials });
 - 阶段 9 集成回归：补齐快速 provider 切换、tab 切换、取消/关闭、外部 prompt 取消、认证超时重试、旧保存与迟到事件隔离；修复模型恢复、等价 props 重渲染和独立认证状态的回归问题。
 - 无障碍回归覆盖真实关联的 tabpanel、授权输入焦点、键盘选择、反复正反向焦点循环、Escape 与焦点回收；axe-core 验证三种流程与 Dialog 语义，不包含真实布局的颜色对比度或屏幕阅读器人工验收。
 - 阶段 9 验收：151 项默认测试、类型检查、双入口构建及 2 项本地 SSE 集成测试通过；测试严格禁止控制台错误/警告，无 React act 警告或未处理 Promise。详细范围与限制见 `docs/REGRESSION_TESTING.md`。
+- 阶段 10 文档与发布准备：更新 README、公开 API、CSS 变量/主题、Pi AI 接入与后端代理示例；添加 changelog、语义化版本策略和发布门禁。
+- pack 自动构建并排除编译期测试声明和 declaration map；公开示例通过包入口导入，可选 Pi peer 范围为 `^0.99.2`，UI 无须安装 Pi AI。
+- 阶段 10 验收：151 项默认测试、类型检查、双入口构建、2 项本地 SSE 集成及 37 文件 pack dry-run 通过。真实 tarball 在仓库外 React 18.3.1 项目完成严格声明检查、生产 JS/CSS 构建与 ESM/SSR smoke，Pi AI 未安装且不可解析；未执行 npm publish 或创建 tag。
 
 尚未完成：
 
-- 阶段 10 文档与发布准备。
 - 真实浏览器颜色对比度、屏幕阅读器和生产 OAuth/云 API 的现场验收（不以 jsdom/本地集成测试替代）。
+- 宿主生产部署与注册表发布；实际发布需另行授权。
 
-阶段 0 至阶段 9 已完成；下一步执行阶段 10，不跳阶段。
+阶段 0 至阶段 10 的本地实现与发布准备已完成；后续进入宿主现场验收。
 
 ## 13. 阶段 0 基线决策
 

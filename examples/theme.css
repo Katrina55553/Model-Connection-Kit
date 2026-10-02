@@ -1,0 +1,17 @@
+/* Import after model-connection-kit/styles.css; body scope also reaches Radix portals. */
+:root {
+  --mck-color-accent: #6250b6;
+  --mck-color-muted: #625f70;
+  --mck-radius-panel: 18px;
+}
+
+/* Illustrative dark palette; review fixed status/button colors before production use. */
+body[data-mck-theme="dark"] {
+  --mck-color-accent: #9c8df0;
+  --mck-color-text: #efedf7;
+  --mck-color-muted: #b9b4ca;
+  --mck-color-border: #494354;
+  --mck-color-surface: #24212c;
+  --mck-color-soft: #302a3f;
+  --mck-shadow-dialog: 0 24px 80px rgb(0 0 0 / 45%);
+}

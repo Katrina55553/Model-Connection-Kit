@@ -1,8 +1,7 @@
 /** Node/desktop initialization; keep Models/store behind the host boundary in a web app. */
 import { createModels, type CredentialStore, type LoginOptions } from "@earendil-works/pi-ai";
-import type { ModelSelection } from "../src/core/types";
-import { createOpenAICompatibleProvider, createPiAiAdapter } from "../src/adapters/pi-ai";
-import { createInitialPiAiProviders } from "../src/adapters/pi-ai/initial-providers";
+import type { ModelSelection } from "model-connection-kit";
+import { createOpenAICompatibleProvider, createPiAiAdapter, createInitialPiAiProviders } from "model-connection-kit/pi-ai";
 
 export async function createPiAiHost(credentials: CredentialStore, savedSelection?: ModelSelection, loginOptions?: LoginOptions) {
   const models = createModels({ credentials });

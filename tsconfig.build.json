@@ -4,11 +4,11 @@
     "noEmit": false,
     "emitDeclarationOnly": true,
     "declaration": true,
-    "declarationMap": true,
+    "declarationMap": false,
     "outDir": "dist",
     "rootDir": "src",
     "types": []
   },
   "include": ["src/index.ts", "src/pi-ai.ts", "src/**/*.d.ts", "src/core/**/*.ts", "src/react/**/*.ts", "src/react/**/*.tsx", "src/adapters/pi-ai/**/*.ts"],
-  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
+  "exclude": ["**/*.test.ts", "**/*.test.tsx", "**/*.typecheck.ts"]
 }

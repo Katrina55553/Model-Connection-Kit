@@ -2,8 +2,7 @@
 import { lookup } from "node:dns/promises";
 import { request } from "node:https";
 import { BlockList, isIP } from "node:net";
-import { AdapterError } from "../src/core/adapter-error";
-import { normalizeBaseUrl, validateModelId } from "../src/core/validate-custom-endpoint";
+import { AdapterError, normalizeBaseUrl, validateModelId } from "model-connection-kit";
 
 export interface ProxyPolicy {
   /** Server-owned exact Base URLs, including path; never accept this list from the client. */
