@@ -4,15 +4,15 @@ import { afterEach } from "vitest";
 
 afterEach(() => cleanup());
 
-if (!HTMLElement.prototype.hasPointerCapture) {
+if (typeof HTMLElement !== "undefined" && !HTMLElement.prototype.hasPointerCapture) {
   HTMLElement.prototype.hasPointerCapture = () => false;
 }
-if (!HTMLElement.prototype.setPointerCapture) {
+if (typeof HTMLElement !== "undefined" && !HTMLElement.prototype.setPointerCapture) {
   HTMLElement.prototype.setPointerCapture = () => undefined;
 }
-if (!HTMLElement.prototype.releasePointerCapture) {
+if (typeof HTMLElement !== "undefined" && !HTMLElement.prototype.releasePointerCapture) {
   HTMLElement.prototype.releasePointerCapture = () => undefined;
 }
-if (!HTMLElement.prototype.scrollIntoView) {
+if (typeof HTMLElement !== "undefined" && !HTMLElement.prototype.scrollIntoView) {
   HTMLElement.prototype.scrollIntoView = () => undefined;
 }

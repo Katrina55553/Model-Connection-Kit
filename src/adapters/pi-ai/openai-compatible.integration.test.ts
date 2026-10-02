@@ -6,9 +6,13 @@ import { createPiAiAdapter } from "./index";
 const integration = describe.skipIf(process.env.MCK_INTEGRATION !== "1");
 
 integration("OpenAI-compatible local integration", () => {
-  it("performs a minimal one-token request against a local SSE server", async () => {
+  it.each(["none", "api-key"] as const)("performs a minimal one-token request using %s authentication", async (authMethod) => {
     let requestBody = "";
+    let authorization: string | undefined;
+    let requestPath: string | undefined;
     const server = createServer((request, response) => {
+      authorization = request.headers.authorization;
+      requestPath = request.url;
       request.setEncoding("utf8");
       request.on("data", (chunk: string) => {
         requestBody += chunk;
@@ -50,7 +54,7 @@ integration("OpenAI-compatible local integration", () => {
       const adapter = createPiAiAdapter({ models, credentials });
       const selection = {
         connectionType: "custom" as const,
-        authMethod: "none" as const,
+        authMethod,
         providerId: "local-openai",
         modelId: "local-model",
         custom: {
@@ -65,7 +69,7 @@ integration("OpenAI-compatible local integration", () => {
         },
       };
 
-      await adapter.connect(selection);
+      await adapter.connect(authMethod === "api-key" ? { ...selection, authMethod, apiKey: "local-test-key" } : { ...selection, authMethod });
       const status = await adapter.testConnection(selection);
       if (status.state !== "reachable") {
         throw new Error(`本地探测失败: ${JSON.stringify(status)}`);
@@ -82,6 +86,10 @@ integration("OpenAI-compatible local integration", () => {
       };
       expect(parsed.max_tokens ?? parsed.max_completion_tokens).toBe(1);
       expect(parsed.messages.at(-1)?.content).toBe("Respond with OK.");
+      expect(authorization).toBe(authMethod === "none" ? undefined : "Bearer local-test-key");
+      expect(requestPath).toBe("/v1/chat/completions");
+      expect(parsed).not.toHaveProperty("store");
+      expect(parsed).not.toHaveProperty("stream_options");
     } finally {
       await new Promise<void>((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve())),

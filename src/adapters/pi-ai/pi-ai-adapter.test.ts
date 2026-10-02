@@ -45,6 +45,10 @@ describe("createOpenAICompatibleProvider", () => {
       reasoning: true,
       contextWindow: 32_000,
       maxTokens: 4_096,
+      compat: {
+        supportsStore: false, supportsDeveloperRole: false, supportsReasoningEffort: false,
+        supportsUsageInStreaming: false, maxTokensField: "max_tokens",
+      },
     });
   });
 });

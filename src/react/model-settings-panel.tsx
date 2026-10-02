@@ -12,6 +12,8 @@ import type {
   ProviderSummary,
 } from "../core/types";
 import { redactSensitiveText } from "../core/redact-sensitive";
+import { normalizeBaseUrl, validateCustomEndpoint, validateModelId } from "../core/validate-custom-endpoint";
+import { CustomEndpointFields, createCustomEndpointDraft, draftMetadata } from "./custom-endpoint-fields";
 import { zhCNText } from "./text";
 import type { ModelSettingsMode, ModelSettingsPanelProps } from "./types";
 import styles from "./model-settings.module.css";
@@ -88,6 +90,8 @@ export function ModelSettingsPanel({
   const [baseUrl, setBaseUrl] = useState(
     value?.connectionType === "custom" ? value.custom.baseUrl : "http://localhost:11434/v1",
   );
+  const [customDraft, setCustomDraft] = useState(() => createCustomEndpointDraft(value?.connectionType === "custom" ? value.custom : undefined));
+  const [customAuthMethod, setCustomAuthMethod] = useState<"api-key" | "none">(value?.connectionType === "custom" ? value.authMethod : "none");
   const apiKeyRef = useRef<HTMLInputElement | null>(null);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
@@ -199,35 +203,48 @@ export function ModelSettingsPanel({
     Boolean(selectedProvider?.auth.ambient) &&
     !selectedProvider?.auth.apiKey?.interactive;
 
-  const selection = useMemo<ModelSelection | null>(() => {
-    if (!modelId) return null;
+  const selectionResult = useMemo<{ selection: ModelSelection | null; validationError?: string }>(() => {
     if (mode === "custom") {
-      if (!baseUrl.trim()) return null;
-      return {
-        connectionType: "custom",
-        authMethod: hasApiKey || authStatus?.method === "api-key" ? "api-key" : "none",
-        providerId: "custom",
-        modelId: modelId.trim(),
-        custom: {
-          baseUrl: baseUrl.trim(),
-          api: "openai-completions",
-          model: {
-            input: requiredCapabilities?.length ? requiredCapabilities : ["text"],
-            reasoning: false,
-            contextWindow: 8_192,
-            maxTokens: 2_048,
-          },
-        },
-      };
+      try {
+        const custom = validateCustomEndpoint({ baseUrl, api: "openai-completions", displayName: customDraft.displayName, model: draftMetadata(customDraft) });
+        const id = validateModelId(modelId);
+        if (requiredCapabilities?.some((capability) => !custom.model.input.includes(capability))) return { selection: null, validationError: labels.capabilityHint };
+        const customProviderId = value?.connectionType === "custom" && normalizeBaseUrl(value.custom.baseUrl) === custom.baseUrl ? value.providerId : `custom:${custom.baseUrl}`;
+        return { selection: {
+          connectionType: "custom", authMethod: hasApiKey ? "api-key" : customAuthMethod,
+          providerId: customProviderId, modelId: id, custom,
+        } };
+      } catch (cause) {
+        return { selection: null, validationError: cause instanceof Error ? cause.message : "自定义配置无效" };
+      }
     }
-    if (!providerId) return null;
-    return {
+    if (!providerId || !modelId) return { selection: null };
+    return { selection: {
       connectionType: "builtin",
       authMethod: mode === "subscription" ? "oauth" : isAmbientOnly ? "ambient" : "api-key",
       providerId,
       modelId,
-    };
-  }, [baseUrl, hasApiKey, authStatus, isAmbientOnly, mode, modelId, providerId, requiredCapabilities]);
+    } };
+  }, [baseUrl, customDraft, customAuthMethod, hasApiKey, isAmbientOnly, mode, modelId, providerId, requiredCapabilities, value, labels.capabilityHint]);
+  const { selection, validationError } = selectionResult;
+
+  async function configureCustom(target: Extract<ModelSelection, { connectionType: "custom" }>, signal: AbortSignal) {
+    const key = apiKeyRef.current?.value ?? "";
+    try {
+      const auth = target.authMethod === "api-key" && !key
+        ? await adapter.getAuthStatus(target.providerId, signal)
+        : (await adapter.connect(key ? { ...target, authMethod: "api-key", apiKey: key } : { ...target, authMethod: "none" }, { signal })).auth;
+      if (signal.aborted || !mounted.current) throw new DOMException("操作已取消", "AbortError");
+      if (target.authMethod === "api-key" && auth.state !== "configured") throw new Error("认证未配置，请先提交 API Key");
+      setAuthStatus(auth);
+      setCustomAuthMethod(target.authMethod);
+      if (apiKeyRef.current) apiKeyRef.current.value = "";
+      setHasApiKey(false);
+    } catch (cause) {
+      if (isAbortError(cause)) throw cause;
+      throw new Error(redactSensitiveText(cause instanceof Error ? cause.message : "自定义接口配置失败", [key]));
+    }
+  }
 
   function dismissPrompt(reason = new DOMException("操作已取消", "AbortError")) {
     const pending = pendingPrompt.current;
@@ -322,24 +339,14 @@ export function ModelSettingsPanel({
     if (!controller) return;
     const submittedApiKey = apiKeyRef.current?.value ?? "";
     const customSelection = mode === "custom" && selection?.connectionType === "custom" ? selection : null;
-    const request: ConnectionRequest = customSelection
-      ? submittedApiKey
-        ? {
-            connectionType: "custom",
-            authMethod: "api-key",
-            providerId: customSelection.providerId,
-            modelId: customSelection.modelId,
-            custom: customSelection.custom,
-            apiKey: submittedApiKey,
-          }
-        : {
-            connectionType: "custom",
-            authMethod: "none",
-            providerId: customSelection.providerId,
-            modelId: customSelection.modelId,
-            custom: customSelection.custom,
-          }
-      : mode === "subscription"
+    if (customSelection) {
+      try { await configureCustom(customSelection, controller.signal); }
+      catch (cause) {
+        if (!controller.signal.aborted && !isAbortError(cause) && mounted.current) setError(cause instanceof Error ? cause.message : "连接失败");
+      } finally { finishAction(controller); }
+      return;
+    }
+    const request: ConnectionRequest = mode === "subscription"
         ? { connectionType: "builtin", authMethod: "oauth", providerId }
         : {
             connectionType: "builtin",
@@ -395,9 +402,10 @@ export function ModelSettingsPanel({
     const controller = beginAction("disconnect");
     if (!controller) return;
     try {
-      const status = await adapter.disconnect(providerId, controller.signal);
+      const status = await adapter.disconnect(selection?.providerId ?? providerId, controller.signal);
       if (!controller.signal.aborted && mounted.current) {
         setAuthStatus(status);
+        if (mode === "custom" && status.state !== "configured") setCustomAuthMethod("none");
         setProbeStatus(null);
       }
     } catch (cause) {
@@ -415,6 +423,7 @@ export function ModelSettingsPanel({
     if (!controller) return;
     setProbeStatus({ state: "testing", mayBeBillable: true });
     try {
+      if (selection.connectionType === "custom") await configureCustom(selection, controller.signal);
       const status = await adapter.testConnection(selection, { signal: controller.signal });
       if (!controller.signal.aborted && mounted.current) setProbeStatus(status);
     } catch (cause) {
@@ -435,6 +444,8 @@ export function ModelSettingsPanel({
     const controller = beginAction("save");
     if (!controller) return;
     try {
+      if (selection.connectionType === "custom") await configureCustom(selection, controller.signal);
+      if (controller.signal.aborted || !mounted.current) return;
       onChange?.(selection);
       await onSave(selection);
     } catch (cause) {
@@ -533,12 +544,19 @@ export function ModelSettingsPanel({
           )}
         </>
       ) : (
-        <>
+        <fieldset className={styles.customForm} disabled={busy !== null}>
           <label>
             {labels.baseUrlLabel}
             <input
               aria-label={labels.baseUrlLabel}
-              onChange={(event) => setBaseUrl(event.target.value)}
+              onChange={(event) => {
+                setBaseUrl(event.target.value);
+                setCustomAuthMethod("none");
+                setAuthStatus(null);
+                setProbeStatus(null);
+                if (apiKeyRef.current) apiKeyRef.current.value = "";
+                setHasApiKey(false);
+              }}
               type="url"
               value={baseUrl}
             />
@@ -557,11 +575,13 @@ export function ModelSettingsPanel({
             {labels.customModelLabel}
             <input
               aria-label={labels.customModelLabel}
-              onChange={(event) => setModelId(event.target.value)}
+              onChange={(event) => { setModelId(event.target.value); setProbeStatus(null); }}
               value={modelId}
             />
           </label>
-        </>
+          <CustomEndpointFields draft={customDraft} labels={labels} onChange={(draft) => { setCustomDraft(draft); setProbeStatus(null); }} />
+          {validationError && <p role="status" className={styles.error}>{validationError}</p>}
+        </fieldset>
       )}
 
       {mode !== "custom" && (

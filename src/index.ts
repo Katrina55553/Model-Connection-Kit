@@ -2,6 +2,7 @@ export { filterModelsByCapabilities } from "./core/filter-models";
 export { createMockModelSettingsAdapter } from "./adapters/mock";
 export { AdapterError, isAdapterError } from "./core/adapter-error";
 export { redactSensitiveText } from "./core/redact-sensitive";
+export { normalizeBaseUrl, validateModelId, validateModelMetadata, validateCustomEndpoint } from "./core/validate-custom-endpoint";
 export {
   normalizeModel,
   normalizeModels,

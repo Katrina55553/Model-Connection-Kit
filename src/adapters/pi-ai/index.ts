@@ -280,7 +280,7 @@ export function createPiAiAdapter(options: PiAiAdapterOptions): ModelSettingsAda
 
     async testConnection(selection, operation = {}) {
       throwIfAborted(operation.signal);
-      if (selection.connectionType === "custom" && !options.models.getProvider(selection.providerId)) {
+      if (selection.connectionType === "custom") {
         if (!options.models.setProvider) {
           throw new AdapterError("capability", "Models 实例不支持注册自定义 provider");
         }
@@ -308,7 +308,7 @@ export function createPiAiAdapter(options: PiAiAdapterOptions): ModelSettingsAda
               { role: "user", content: probePrompt, timestamp: Date.now() },
             ],
           },
-          { signal: controller.signal, maxTokens: 1, timeoutMs: probeTimeoutMs },
+          { signal: controller.signal, maxTokens: 1, timeoutMs: probeTimeoutMs, maxRetries: 0 },
         );
         if (operation.signal?.aborted) throw abortError();
         const reachable = !controller.signal.aborted && response.stopReason !== "error" && response.stopReason !== "aborted";

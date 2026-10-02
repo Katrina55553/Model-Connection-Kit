@@ -504,13 +504,18 @@ const adapter = createPiAiAdapter({ models, credentials });
 - 阶段 6 认证交互：内嵌 text/secret/manual-code/select prompt、授权链接与设备码事件、取消与卸载清理、登录超时和断开认证。
 - API Key 使用非受控输入，成功后清空且不进入选择值；错误与状态脱敏，ambient-only 服务商不展示密钥输入、不执行交互写入。
 - 认证回归覆盖取消 prompt 不写凭证、自定义密钥清空后保持认证方式、错误不泄露提交密钥；类型检查、32 项默认测试和双入口构建通过。
+- 阶段 7 自定义接口完整化：显示名称、固定协议、输入能力、reasoning、token 上限、可选价格与 API Key；URL、模型 ID 和元数据校验已接入表单与 Pi provider 工厂。
+- 自定义配置保留 URL 路径语义；价格未填写时明确显示未知；测试/保存先单向提交待输入密钥，回调不含秘密；修改目标清除认证与探测状态。
+- 兼容默认值关闭 store、developer role、reasoning_effort 和流式 usage 请求；无认证请求不发送占位 Authorization header，探测关闭 SDK 重试。
+- `examples/backend-proxy.ts` 与接入说明提供精确 HTTPS/443 allowlist、DNS 全结果公网校验、地址固定、防重定向与响应限制；Node 示例不进入根入口。
+- 阶段 7 验收：类型检查、102 项默认测试、双入口构建及 2 项真实本地 SSE 集成测试通过；集成覆盖有密钥/无密钥，不声明已在本机验证 Ollama 或 LM Studio 产品。
 
 尚未完成：
 
-- 自定义接口安全策略、Pi AI provider 扩展和发布文档。
-- 阶段 7 之后的适配器扩展和回归验证。
+- Pi AI provider 扩展和发布文档。
+- 阶段 8 之后的适配器扩展和回归验证。
 
-阶段 0 至阶段 6 已完成；下一步执行阶段 7，不跳阶段。
+阶段 0 至阶段 7 已完成；下一步执行阶段 8，不跳阶段。
 
 ## 13. 阶段 0 基线决策
 

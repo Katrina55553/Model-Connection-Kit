@@ -6,6 +6,72 @@ import type { ModelSettingsAdapter } from "../core/types";
 import { ModelSettingsPanel } from "./model-settings-panel";
 
 describe("ModelSettingsPanel", () => {
+  it("validates and saves complete custom metadata without a model catalog", async () => {
+    const base = createMockModelSettingsAdapter();
+    const listModels = vi.fn(base.listModels);
+    const connect = vi.fn(base.connect);
+    const onSave = vi.fn();
+    render(<ModelSettingsPanel adapter={{ ...base, listModels, connect }} defaultMode="custom" onSave={onSave} />);
+    expect(screen.getByText("价格未知（留空不代表免费）")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("模型 ID"), { target: { value: "org/local:latest" } });
+    fireEvent.change(screen.getByLabelText("Base URL"), { target: { value: " https://models.example/proxy/v1/ " } });
+    fireEvent.change(screen.getByLabelText("显示名称（可选）"), { target: { value: "My model" } });
+    fireEvent.click(screen.getByLabelText("图片"));
+    fireEvent.click(screen.getByLabelText("推理模型（reasoning）"));
+    fireEvent.change(screen.getByLabelText("Context window"), { target: { value: "16384" } });
+    fireEvent.change(screen.getByLabelText("Max tokens"), { target: { value: "32768" } });
+    expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "测试连接" })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("Max tokens"), { target: { value: "4096" } });
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    expect(onSave.mock.calls[0]?.[0]).toMatchObject({
+      connectionType: "custom", authMethod: "none", modelId: "org/local:latest",
+      custom: { baseUrl: "https://models.example/proxy/v1/", api: "openai-completions", displayName: "My model", model: { input: ["text", "image"], reasoning: true, contextWindow: 16384, maxTokens: 4096 } },
+    });
+    expect(onSave.mock.calls[0]?.[0].custom.model).not.toHaveProperty("cost");
+    expect(connect).toHaveBeenCalledOnce();
+    expect(listModels).not.toHaveBeenCalled();
+  });
+
+  it("does not treat a partially filled price as free", () => {
+    render(<ModelSettingsPanel adapter={createMockModelSettingsAdapter()} defaultMode="custom" onSave={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("模型 ID"), { target: { value: "local" } });
+    fireEvent.change(screen.getByLabelText("输入价格（可选）"), { target: { value: "0" } });
+    expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("输出价格（可选）"), { target: { value: "0" } });
+    expect(screen.getByRole("button", { name: "保存" })).toBeEnabled();
+  });
+
+  it("clears credentials and probe state when the custom target changes", async () => {
+    const base = createMockModelSettingsAdapter();
+    const onSave = vi.fn();
+    render(<ModelSettingsPanel adapter={base} defaultMode="custom" onSave={onSave} />);
+    fireEvent.change(screen.getByLabelText("模型 ID"), { target: { value: "local" } });
+    fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "first-endpoint-key" } });
+    fireEvent.click(screen.getByRole("button", { name: "测试连接" }));
+    expect(await screen.findByText("最小模型请求成功")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Base URL"), { target: { value: "https://second.example/v1" } });
+    expect(screen.queryByText("最小模型请求成功")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("API Key")).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    expect(onSave.mock.calls[0]?.[0]).toMatchObject({ authMethod: "none", providerId: "custom:https://second.example/v1" });
+  });
+
+  it("submits a pending custom key before probing and does not forward it to the probe", async () => {
+    const base = createMockModelSettingsAdapter();
+    const connect = vi.fn(base.connect);
+    const testConnection = vi.fn(base.testConnection);
+    render(<ModelSettingsPanel adapter={{ ...base, connect, testConnection }} defaultMode="custom" onSave={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("模型 ID"), { target: { value: "local" } });
+    fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "test-secret" } });
+    fireEvent.click(screen.getByRole("button", { name: "测试连接" }));
+    await waitFor(() => expect(testConnection).toHaveBeenCalledOnce());
+    expect(connect.mock.calls[0]?.[0]).toMatchObject({ apiKey: "test-secret", authMethod: "api-key" });
+    expect(testConnection.mock.calls[0]?.[0]).not.toHaveProperty("apiKey");
+    expect(screen.getByLabelText("API Key")).toHaveValue("");
+  });
   it("cancels an OAuth prompt without configuring credentials", async () => {
     const adapter = createMockModelSettingsAdapter({ requireOAuthPrompt: true });
     render(<ModelSettingsPanel adapter={adapter} onSave={vi.fn()} />);
@@ -147,8 +213,8 @@ describe("ModelSettingsPanel", () => {
     const save = screen.getByRole("button", { name: "保存" });
     fireEvent.click(save);
     fireEvent.click(save);
-    expect(onSave).toHaveBeenCalledOnce();
-    finishSave?.();
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    await act(async () => finishSave?.());
   });
 
   it("retries a failed provider catalog", async () => {
