@@ -19,6 +19,8 @@ export const zhCNText: ModelSettingsText = {
   subscriptionDescription: "授权由适配器或宿主处理，组件不会接收 OAuth token。",
   connect: "连接",
   connecting: "连接中…",
+  disconnect: "断开认证",
+  disconnecting: "断开中…",
   test: "测试连接",
   testing: "测试中…",
   save: "保存",
@@ -31,6 +33,8 @@ export const zhCNText: ModelSettingsText = {
   noProviders: "没有支持此认证方式的服务商",
   noModels: "没有满足条件的模型",
   retry: "重试",
+  promptSubmit: "继续",
+  operationTimeout: "认证操作超时，请重试",
   loading: "加载中…",
 };
 
@@ -49,6 +53,8 @@ export const enUSText: ModelSettingsText = {
   subscriptionDescription: "The adapter or host handles authorization; OAuth tokens never enter the component.",
   connect: "Connect",
   connecting: "Connecting…",
+  disconnect: "Disconnect",
+  disconnecting: "Disconnecting…",
   test: "Test connection",
   testing: "Testing…",
   save: "Save",
@@ -61,5 +67,7 @@ export const enUSText: ModelSettingsText = {
   noProviders: "No providers support this authentication method",
   noModels: "No models match the requirements",
   retry: "Retry",
+  promptSubmit: "Continue",
+  operationTimeout: "Authentication timed out; try again",
   loading: "Loading…",
 };

@@ -86,6 +86,43 @@
   border-radius: 9px;
 }
 
+.prompt {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  background: var(--mck-color-soft);
+  border: 1px solid color-mix(in srgb, var(--mck-color-accent) 30%, var(--mck-color-border));
+  border-radius: var(--mck-radius-control);
+}
+
+.prompt input,
+.prompt select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  color: var(--mck-color-text);
+  background: var(--mck-color-surface);
+  border: 1px solid var(--mck-color-border);
+  border-radius: 9px;
+  font: inherit;
+}
+
+.promptActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.promptActions button {
+  min-height: 36px;
+  padding: 0 12px;
+  color: var(--mck-color-text);
+  background: var(--mck-color-surface);
+  border: 1px solid var(--mck-color-border);
+  border-radius: 9px;
+}
+
 .dialogOverlay {
   position: fixed;
   z-index: 1000;

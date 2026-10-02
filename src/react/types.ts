@@ -22,6 +22,8 @@ export interface ModelSettingsText {
   subscriptionDescription: string;
   connect: string;
   connecting: string;
+  disconnect: string;
+  disconnecting: string;
   test: string;
   testing: string;
   save: string;
@@ -34,6 +36,8 @@ export interface ModelSettingsText {
   noProviders: string;
   noModels: string;
   retry: string;
+  promptSubmit: string;
+  operationTimeout: string;
   loading: string;
 }
 

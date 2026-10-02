@@ -187,7 +187,7 @@ export function createPiAiAdapter(options: PiAiAdapterOptions): ModelSettingsAda
       if (signal?.aborted) throw abortError();
       return {
         state: "error",
-        message: cause instanceof Error ? cause.message : "认证状态检查失败",
+        message: "认证状态检查失败，请检查宿主凭证配置",
       };
     }
   }
@@ -241,10 +241,22 @@ export function createPiAiAdapter(options: PiAiAdapterOptions): ModelSettingsAda
             throw new AdapterError("capability", "该 provider 不支持 API Key");
           }
           if (provider.auth.apiKey.login) {
+            let suppliedKey = false;
             await options.models.login(
               request.providerId,
               "api_key",
-              interaction(connectOptions),
+              interaction({
+                ...connectOptions,
+                prompt: async (prompt) => {
+                  throwIfAborted(connectOptions.signal);
+                  if (prompt.type === "secret" && !suppliedKey && request.apiKey) {
+                    suppliedKey = true;
+                    return request.apiKey;
+                  }
+                  if (!connectOptions.prompt) throw new AdapterError("capability", "此认证流程需要宿主提供 prompt handler");
+                  return connectOptions.prompt(prompt);
+                },
+              }),
             );
           } else {
             if (!apiKeyFallbackProviders.has(request.providerId)) {
@@ -299,12 +311,12 @@ export function createPiAiAdapter(options: PiAiAdapterOptions): ModelSettingsAda
           { signal: controller.signal, maxTokens: 1, timeoutMs: probeTimeoutMs },
         );
         if (operation.signal?.aborted) throw abortError();
-        const reachable = response.stopReason !== "error" && response.stopReason !== "aborted";
+        const reachable = !controller.signal.aborted && response.stopReason !== "error" && response.stopReason !== "aborted";
         return {
           state: reachable ? "reachable" : "unreachable",
           message: reachable
             ? "最小模型请求成功"
-            : response.errorMessage ?? "最小模型请求失败",
+            : "最小模型请求失败或超时，请检查认证与网络",
           testedAt: Date.now(),
           mayBeBillable: true,
         };
@@ -312,7 +324,7 @@ export function createPiAiAdapter(options: PiAiAdapterOptions): ModelSettingsAda
         if (operation.signal?.aborted) throw abortError();
         return {
           state: "unreachable",
-          message: cause instanceof Error ? cause.message : "最小模型请求失败",
+          message: "最小模型请求失败，请检查认证与网络",
           testedAt: Date.now(),
           mayBeBillable: true,
         };

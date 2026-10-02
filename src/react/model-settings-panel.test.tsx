@@ -6,6 +6,39 @@ import type { ModelSettingsAdapter } from "../core/types";
 import { ModelSettingsPanel } from "./model-settings-panel";
 
 describe("ModelSettingsPanel", () => {
+  it("cancels an OAuth prompt without configuring credentials", async () => {
+    const adapter = createMockModelSettingsAdapter({ requireOAuthPrompt: true });
+    render(<ModelSettingsPanel adapter={adapter} onSave={vi.fn()} />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "连接" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "连接" }));
+    expect(await screen.findByLabelText("输入授权码", { selector: "input" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "取消" }));
+    await waitFor(() => expect(screen.queryByLabelText("输入授权码", { selector: "input" })).not.toBeInTheDocument());
+    expect(await adapter.getAuthStatus("openai-codex")).toEqual({ state: "unconfigured" });
+  });
+
+  it("retains custom key authentication after clearing the secret input", async () => {
+    const onSave = vi.fn();
+    render(<ModelSettingsPanel adapter={createMockModelSettingsAdapter()} defaultMode="custom" onSave={onSave} />);
+    fireEvent.change(screen.getByLabelText("模型 ID"), { target: { value: "local" } });
+    const input = screen.getByLabelText("API Key");
+    fireEvent.change(input, { target: { value: "private-key" } });
+    expect(input).not.toHaveAttribute("value");
+    fireEvent.click(screen.getByRole("button", { name: "连接" }));
+    await waitFor(() => expect(input).toHaveValue(""));
+    fireEvent.click(screen.getByRole("button", { name: "保存" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledOnce());
+    expect(onSave.mock.calls[0]?.[0].authMethod).toBe("api-key");
+  });
+
+  it("redacts a submitted secret from connection errors", async () => {
+    const base = createMockModelSettingsAdapter();
+    render(<ModelSettingsPanel adapter={{ ...base, connect: async () => { throw new Error("拒绝 private-key"); } }} defaultMode="api-key" onSave={vi.fn()} />);
+    await waitFor(() => expect(screen.getByLabelText("模型")).toHaveTextContent("GPT Text"));
+    fireEvent.change(screen.getByLabelText("API Key"), { target: { value: "private-key" } });
+    fireEvent.click(screen.getByRole("button", { name: "连接" }));
+    expect(await screen.findByRole("alert")).not.toHaveTextContent("private-key");
+  });
   it("submits an API key one way, clears it, and never includes it in callbacks", async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();

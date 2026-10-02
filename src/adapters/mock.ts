@@ -153,6 +153,7 @@ export function createMockModelSettingsAdapter(
         connectOptions.onEvent?.({ type: "progress", message: "授权完成" });
       }
 
+      if (connectOptions.signal?.aborted) throw abortError();
       const status: AuthStatus = {
         state: "configured",
         method: request.authMethod,

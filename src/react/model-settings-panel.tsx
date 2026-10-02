@@ -3,6 +3,7 @@ import * as Tabs from "@radix-ui/react-tabs";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   AuthEvent,
+  AuthPrompt,
   AuthStatus,
   ConnectionRequest,
   ModelSelection,
@@ -10,6 +11,7 @@ import type {
   ProbeStatus,
   ProviderSummary,
 } from "../core/types";
+import { redactSensitiveText } from "../core/redact-sensitive";
 import { zhCNText } from "./text";
 import type { ModelSettingsMode, ModelSettingsPanelProps } from "./types";
 import styles from "./model-settings.module.css";
@@ -86,17 +88,28 @@ export function ModelSettingsPanel({
   const [baseUrl, setBaseUrl] = useState(
     value?.connectionType === "custom" ? value.custom.baseUrl : "http://localhost:11434/v1",
   );
-  const [apiKey, setApiKey] = useState("");
+  const apiKeyRef = useRef<HTMLInputElement | null>(null);
+  const [hasApiKey, setHasApiKey] = useState(false);
   const [authStatus, setAuthStatus] = useState<AuthStatus | null>(null);
   const [probeStatus, setProbeStatus] = useState<ProbeStatus | null>(null);
   const [eventMessage, setEventMessage] = useState("");
+  const [authorizationUrl, setAuthorizationUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [loadingProviders, setLoadingProviders] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
   const [retryVersion, setRetryVersion] = useState(0);
-  const [busy, setBusy] = useState<"connect" | "test" | "save" | null>(null);
+  const [activePrompt, setActivePrompt] = useState<AuthPrompt | null>(null);
+  const [promptSelectValue, setPromptSelectValue] = useState("");
+  const promptInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingPrompt = useRef<{
+    resolve: (value: string) => void;
+    reject: (reason: unknown) => void;
+    cleanup: () => void;
+  } | null>(null);
+  const [busy, setBusy] = useState<"connect" | "disconnect" | "test" | "save" | null>(null);
   const busyRef = useRef<typeof busy>(null);
   const actionController = useRef<AbortController | null>(null);
+  const actionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mounted = useRef(true);
 
   useEffect(() => {
@@ -104,6 +117,10 @@ export function ModelSettingsPanel({
     return () => {
       mounted.current = false;
       actionController.current?.abort();
+      if (actionTimer.current) clearTimeout(actionTimer.current);
+      pendingPrompt.current?.cleanup();
+      pendingPrompt.current?.reject(new DOMException("操作已取消", "AbortError"));
+      pendingPrompt.current = null;
       busyRef.current = null;
     };
   }, []);
@@ -130,7 +147,7 @@ export function ModelSettingsPanel({
         const available = catalog.filter((provider) =>
           mode === "subscription"
             ? provider.auth.oauth?.isSubscription
-            : provider.auth.apiKey?.interactive,
+            : provider.auth.apiKey?.interactive || provider.auth.ambient,
         );
         setProviders(available);
         setProviderId((current) =>
@@ -139,7 +156,7 @@ export function ModelSettingsPanel({
         setLoadingProviders(false);
       })
       .catch((cause: unknown) => {
-        if (!isAbortError(cause) && mounted.current) {
+        if (!controller.signal.aborted && !isAbortError(cause) && mounted.current) {
           setError(cause instanceof Error ? cause.message : "服务商目录加载失败");
           setLoadingProviders(false);
         }
@@ -168,7 +185,7 @@ export function ModelSettingsPanel({
         setLoadingModels(false);
       })
       .catch((cause: unknown) => {
-        if (!isAbortError(cause) && mounted.current) {
+        if (!controller.signal.aborted && !isAbortError(cause) && mounted.current) {
           setError(cause instanceof Error ? cause.message : "模型目录加载失败");
           setLoadingModels(false);
         }
@@ -176,13 +193,19 @@ export function ModelSettingsPanel({
     return () => controller.abort();
   }, [adapter, mode, providerId, requiredCapabilities, retryVersion]);
 
+  const selectedProvider = providers.find((provider) => provider.id === providerId);
+  const isAmbientOnly =
+    mode === "api-key" &&
+    Boolean(selectedProvider?.auth.ambient) &&
+    !selectedProvider?.auth.apiKey?.interactive;
+
   const selection = useMemo<ModelSelection | null>(() => {
     if (!modelId) return null;
     if (mode === "custom") {
       if (!baseUrl.trim()) return null;
       return {
         connectionType: "custom",
-        authMethod: apiKey ? "api-key" : "none",
+        authMethod: hasApiKey || authStatus?.method === "api-key" ? "api-key" : "none",
         providerId: "custom",
         modelId: modelId.trim(),
         custom: {
@@ -200,44 +223,114 @@ export function ModelSettingsPanel({
     if (!providerId) return null;
     return {
       connectionType: "builtin",
-      authMethod: mode === "subscription" ? "oauth" : "api-key",
+      authMethod: mode === "subscription" ? "oauth" : isAmbientOnly ? "ambient" : "api-key",
       providerId,
       modelId,
     };
-  }, [apiKey, baseUrl, mode, modelId, providerId, requiredCapabilities]);
+  }, [baseUrl, hasApiKey, authStatus, isAmbientOnly, mode, modelId, providerId, requiredCapabilities]);
 
-  function beginAction(kind: "connect" | "test" | "save"): AbortController | null {
+  function dismissPrompt(reason = new DOMException("操作已取消", "AbortError")) {
+    const pending = pendingPrompt.current;
+    if (!pending) return;
+    pendingPrompt.current = null;
+    pending.cleanup();
+    if (promptInputRef.current) promptInputRef.current.value = "";
+    if (mounted.current) setActivePrompt(null);
+    pending.reject(reason);
+  }
+
+  function submitPrompt() {
+    const pending = pendingPrompt.current;
+    if (!pending || !activePrompt) return;
+    const value =
+      activePrompt.type === "select"
+        ? promptSelectValue
+        : (promptInputRef.current?.value ?? "");
+    pendingPrompt.current = null;
+    pending.cleanup();
+    if (promptInputRef.current) promptInputRef.current.value = "";
+    setActivePrompt(null);
+    pending.resolve(value);
+  }
+
+  function requestPrompt(prompt: AuthPrompt, signal: AbortSignal): Promise<string> {
+    if (prompt.signal?.aborted || signal.aborted) return Promise.reject(new DOMException("操作已取消", "AbortError"));
+    dismissPrompt();
+    return new Promise<string>((resolve, reject) => {
+      const abort = () => {
+        if (pendingPrompt.current?.reject !== reject) return;
+        pendingPrompt.current = null;
+        cleanup();
+        if (promptInputRef.current) promptInputRef.current.value = "";
+        if (mounted.current) setActivePrompt(null);
+        reject(new DOMException("操作已取消", "AbortError"));
+      };
+      const cleanup = () => {
+        signal.removeEventListener("abort", abort);
+        prompt.signal?.removeEventListener("abort", abort);
+      };
+      signal.addEventListener("abort", abort, { once: true });
+      prompt.signal?.addEventListener("abort", abort, { once: true });
+      pendingPrompt.current = { resolve, reject, cleanup };
+      setPromptSelectValue(prompt.type === "select" ? (prompt.options[0]?.id ?? "") : "");
+      setActivePrompt(prompt);
+    });
+  }
+
+  function beginAction(
+    kind: "connect" | "disconnect" | "test" | "save",
+  ): AbortController | null {
     if (busyRef.current) return null;
     const controller = new AbortController();
     actionController.current = controller;
     busyRef.current = kind;
     setBusy(kind);
     setError("");
+    if (kind === "connect") {
+      actionTimer.current = setTimeout(() => {
+        if (actionController.current !== controller) return;
+        controller.abort();
+        dismissPrompt();
+        actionController.current = null;
+        busyRef.current = null;
+        if (mounted.current) {
+          setBusy(null);
+          setError(labels.operationTimeout);
+        }
+      }, 60_000);
+    }
     return controller;
   }
 
   function finishAction(controller: AbortController) {
-    if (mounted.current && actionController.current === controller && !controller.signal.aborted) {
+    if (actionController.current === controller) {
+      if (actionTimer.current) clearTimeout(actionTimer.current);
+      actionTimer.current = null;
       busyRef.current = null;
       actionController.current = null;
-      setBusy(null);
+      if (mounted.current) setBusy(null);
     }
   }
 
   async function handleConnect() {
-    if ((!providerId && mode !== "custom") || (mode === "custom" && !selection)) return;
+    if (
+      isAmbientOnly ||
+      (!providerId && mode !== "custom") ||
+      (mode === "custom" && !selection)
+    ) return;
     const controller = beginAction("connect");
     if (!controller) return;
+    const submittedApiKey = apiKeyRef.current?.value ?? "";
     const customSelection = mode === "custom" && selection?.connectionType === "custom" ? selection : null;
     const request: ConnectionRequest = customSelection
-      ? apiKey
+      ? submittedApiKey
         ? {
             connectionType: "custom",
             authMethod: "api-key",
             providerId: customSelection.providerId,
             modelId: customSelection.modelId,
             custom: customSelection.custom,
-            apiKey,
+            apiKey: submittedApiKey,
           }
         : {
             connectionType: "custom",
@@ -248,36 +341,68 @@ export function ModelSettingsPanel({
           }
       : mode === "subscription"
         ? { connectionType: "builtin", authMethod: "oauth", providerId }
-        : { connectionType: "builtin", authMethod: "api-key", providerId, apiKey };
+        : {
+            connectionType: "builtin",
+            authMethod: "api-key",
+            providerId,
+            apiKey: submittedApiKey,
+          };
 
     try {
       const result = await adapter.connect(request, {
         signal: controller.signal,
         onEvent: (event: AuthEvent) => {
           if (controller.signal.aborted || !mounted.current) return;
+          if (event.type === "auth-url" || event.type === "device-code") {
+            const target = event.type === "auth-url" ? event.url : event.verificationUri;
+            try {
+              const parsed = new URL(target);
+              setAuthorizationUrl(parsed.protocol === "https:" ? parsed.href : null);
+            } catch { setAuthorizationUrl(null); }
+          }
           setEventMessage(
             event.type === "auth-url"
               ? event.instructions ?? event.url
               : event.type === "device-code"
                 ? `${event.verificationUri} · ${event.userCode}`
-                : event.message,
+                : redactSensitiveText(event.message, [submittedApiKey]),
           );
         },
-        prompt: async (prompt) => {
-          if (prompt.signal?.aborted) throw new DOMException("操作已取消", "AbortError");
-          return window.prompt(
-            prompt.message,
-            prompt.type === "select" ? undefined : prompt.placeholder,
-          ) ?? "";
-        },
+        prompt: (prompt) => requestPrompt(prompt, controller.signal),
       });
       if (!controller.signal.aborted && mounted.current) {
         setAuthStatus(result.auth);
-        setApiKey("");
+        setEventMessage("");
+        setAuthorizationUrl(null);
+        if (apiKeyRef.current) apiKeyRef.current.value = "";
+        setHasApiKey(false);
       }
     } catch (cause) {
-      if (!isAbortError(cause) && mounted.current) {
-        setError(cause instanceof Error ? cause.message : "连接失败");
+      if (!controller.signal.aborted && !isAbortError(cause) && mounted.current) {
+        setError(
+          redactSensitiveText(cause instanceof Error ? cause.message : "连接失败", [
+            submittedApiKey,
+          ]),
+        );
+      }
+    } finally {
+      finishAction(controller);
+    }
+  }
+
+  async function handleDisconnect() {
+    if (!providerId) return;
+    const controller = beginAction("disconnect");
+    if (!controller) return;
+    try {
+      const status = await adapter.disconnect(providerId, controller.signal);
+      if (!controller.signal.aborted && mounted.current) {
+        setAuthStatus(status);
+        setProbeStatus(null);
+      }
+    } catch (cause) {
+      if (!controller.signal.aborted && !isAbortError(cause) && mounted.current) {
+        setError(redactSensitiveText(cause instanceof Error ? cause.message : "断开认证失败"));
       }
     } finally {
       finishAction(controller);
@@ -293,10 +418,10 @@ export function ModelSettingsPanel({
       const status = await adapter.testConnection(selection, { signal: controller.signal });
       if (!controller.signal.aborted && mounted.current) setProbeStatus(status);
     } catch (cause) {
-      if (!isAbortError(cause) && mounted.current) {
+      if (!controller.signal.aborted && !isAbortError(cause) && mounted.current) {
         setProbeStatus({
           state: "unreachable",
-          message: cause instanceof Error ? cause.message : "连接测试失败",
+          message: redactSensitiveText(cause instanceof Error ? cause.message : "连接测试失败"),
           mayBeBillable: true,
         });
       }
@@ -313,8 +438,8 @@ export function ModelSettingsPanel({
       onChange?.(selection);
       await onSave(selection);
     } catch (cause) {
-      if (!isAbortError(cause) && mounted.current) {
-        setError(cause instanceof Error ? cause.message : "保存失败");
+      if (!controller.signal.aborted && !isAbortError(cause) && mounted.current) {
+        setError(redactSensitiveText(cause instanceof Error ? cause.message : "保存失败"));
       }
     } finally {
       finishAction(controller);
@@ -330,7 +455,7 @@ export function ModelSettingsPanel({
   const canConnect =
     mode === "custom"
       ? selection !== null
-      : Boolean(providerId) && (mode === "subscription" || Boolean(apiKey.trim()));
+      : !isAmbientOnly && Boolean(providerId) && (mode === "subscription" || hasApiKey);
 
   return (
     <section className={["mck-panel", styles.panel, className].filter(Boolean).join(" ")}>
@@ -345,13 +470,18 @@ export function ModelSettingsPanel({
         onValueChange={(nextMode) => {
           if (nextMode === "subscription" || nextMode === "api-key" || nextMode === "custom") {
               actionController.current?.abort();
+              if (actionTimer.current) clearTimeout(actionTimer.current);
+              actionTimer.current = null;
               actionController.current = null;
               busyRef.current = null;
               setBusy(null);
+              dismissPrompt();
               setMode(nextMode);
-              setApiKey("");
+              if (apiKeyRef.current) apiKeyRef.current.value = "";
+              setHasApiKey(false);
               setProbeStatus(null);
               setEventMessage("");
+              setAuthorizationUrl(null);
               setError("");
           }
         }}
@@ -384,15 +514,20 @@ export function ModelSettingsPanel({
               <strong>{labels.subscriptionTitle}</strong>
               <span>{labels.subscriptionDescription}</span>
             </div>
+          ) : isAmbientOnly ? (
+            <div className="mck-callout">
+              <strong>{selectedProvider?.auth.apiKey?.label}</strong>
+              <span>此服务商只读取宿主环境中的凭证，不接受组件输入。</span>
+            </div>
           ) : (
             <label>
               {labels.apiKeyLabel}
               <input
                 aria-label={labels.apiKeyLabel}
                 autoComplete="off"
-                onChange={(event) => setApiKey(event.target.value)}
+                onChange={(event) => setHasApiKey(Boolean(event.target.value))}
+                ref={apiKeyRef}
                 type="password"
-                value={apiKey}
               />
             </label>
           )}
@@ -413,9 +548,9 @@ export function ModelSettingsPanel({
             <input
               aria-label={labels.apiKeyLabel}
               autoComplete="off"
-              onChange={(event) => setApiKey(event.target.value)}
+              onChange={(event) => setHasApiKey(Boolean(event.target.value))}
+              ref={apiKeyRef}
               type="password"
-              value={apiKey}
             />
           </label>
           <label>
@@ -445,12 +580,50 @@ export function ModelSettingsPanel({
         </>
       )}
 
+      {activePrompt && (
+        <div aria-label={activePrompt.message} className={styles.prompt} role="group">
+          <strong>{activePrompt.message}</strong>
+          {activePrompt.type === "select" ? (
+            <select
+              aria-label={activePrompt.message}
+              onChange={(event) => setPromptSelectValue(event.target.value)}
+              value={promptSelectValue}
+            >
+              {activePrompt.options.map((option) => (
+                <option key={option.id} value={option.id}>{option.label}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              aria-label={activePrompt.message}
+              autoComplete="off"
+              placeholder={activePrompt.placeholder}
+              ref={promptInputRef}
+              type={activePrompt.type === "secret" ? "password" : "text"}
+            />
+          )}
+          <div className={styles.promptActions}>
+            <button onClick={() => dismissPrompt()} type="button">{labels.cancel}</button>
+            <button
+              disabled={activePrompt.type === "select" && !promptSelectValue}
+              onClick={submitPrompt}
+              type="button"
+            >
+              {labels.promptSubmit}
+            </button>
+          </div>
+        </div>
+      )}
+
       <p aria-live="polite" className="mck-status">
-        {eventMessage || authMessage}
+        {eventMessage || redactSensitiveText(authMessage)}
       </p>
+      {authorizationUrl && (
+        <a href={authorizationUrl} rel="noopener noreferrer" target="_blank">{labels.subscriptionTitle}</a>
+      )}
       {probeStatus && (
         <p aria-live="polite" className={`mck-probe mck-probe-${probeStatus.state}`}>
-          {probeStatus.message ?? probeStatus.state}
+          {redactSensitiveText(probeStatus.message ?? probeStatus.state)}
         </p>
       )}
       {error && (
@@ -471,6 +644,11 @@ export function ModelSettingsPanel({
         <button disabled={!selection || busy !== null} onClick={handleTest} type="button">
           {busy === "test" ? labels.testing : labels.test}
         </button>
+        {authStatus?.state === "configured" && (
+          <button disabled={busy !== null} onClick={handleDisconnect} type="button">
+            {busy === "disconnect" ? labels.disconnecting : labels.disconnect}
+          </button>
+        )}
         {onCancel && (
           <button disabled={busy !== null} onClick={onCancel} type="button">
             {labels.cancel}
