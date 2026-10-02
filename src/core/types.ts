@@ -144,6 +144,8 @@ export interface ListProvidersOptions {
 
 export interface ListModelsOptions {
   providerId: string;
+  /** Force a dynamic catalog refresh when supported; static catalogs stay synchronous. */
+  refresh?: boolean;
   requiredCapabilities?: readonly ModelCapability[];
   signal?: AbortSignal;
 }

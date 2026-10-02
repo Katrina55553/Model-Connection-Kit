@@ -509,13 +509,18 @@ const adapter = createPiAiAdapter({ models, credentials });
 - 兼容默认值关闭 store、developer role、reasoning_effort 和流式 usage 请求；无认证请求不发送占位 Authorization header，探测关闭 SDK 重试。
 - `examples/backend-proxy.ts` 与接入说明提供精确 HTTPS/443 allowlist、DNS 全结果公网校验、地址固定、防重定向与响应限制；Node 示例不进入根入口。
 - 阶段 7 验收：类型检查、102 项默认测试、双入口构建及 2 项真实本地 SSE 集成测试通过；集成覆盖有密钥/无密钥，不声明已在本机验证 Ollama 或 LM Studio 产品。
+- 阶段 8 Pi AI 完整适配器：动态目录按 provider 可取消地刷新、强制重试与离线缓存模式、局部错误隔离、归一化和输入能力过滤。
+- 新增 Pi 专用非秘密 `resolveAuthStatus()` 与 `refresh()`；`checkAuth()` 保持配置检查语义，`getAuth()` 仅在内部解析/刷新凭证；退出后重算 API Key/ambient 来源。
+- 显式 provider 工厂覆盖 OpenAI、Anthropic、Google、OpenRouter 和 OpenAI Codex；四个真实标准密钥登录流程均通过真实 Pi Models/内存 store 契约测试，不自动联网或创建凭证存储。
+- prompt/event 映射、宿主稳定安装 ID、取消、迟到事件隔离与错误分类已完整化；探测前检查认证，支持非协作运行时的截止时间，不返回秘密或原始 error cause。
+- 阶段 8 验收：类型检查、130 项默认测试、双入口构建及 2 项真实本地 SSE 集成测试通过；尚未使用生产云凭证验证现场 OAuth/云 API。
 
 尚未完成：
 
-- Pi AI provider 扩展和发布文档。
-- 阶段 8 之后的适配器扩展和回归验证。
+- 全面竞态、无障碍回归和发布文档。
+- 阶段 9 之后的集成回归和发布准备。
 
-阶段 0 至阶段 7 已完成；下一步执行阶段 8，不跳阶段。
+阶段 0 至阶段 8 已完成；下一步执行阶段 9，不跳阶段。
 
 ## 13. 阶段 0 基线决策
 

@@ -132,6 +132,7 @@ describe("createPiAiAdapter", () => {
           name: "OpenAI Codex OAuth",
           loginLabel: "使用 ChatGPT 登录",
           isSubscription: true,
+          login: vi.fn(),
         },
       },
     } as unknown as Provider;

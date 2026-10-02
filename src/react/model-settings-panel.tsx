@@ -176,7 +176,7 @@ export function ModelSettingsPanel({
     setAuthStatus(null);
     setLoadingModels(true);
     void Promise.all([
-      adapter.listModels({ providerId, requiredCapabilities, signal: controller.signal }),
+      adapter.listModels({ providerId, requiredCapabilities, refresh: retryVersion > 0, signal: controller.signal }),
       adapter.getAuthStatus(providerId, controller.signal),
     ])
       .then(([catalog, status]) => {
