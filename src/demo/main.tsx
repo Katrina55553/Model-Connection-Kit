@@ -4,6 +4,7 @@ import { createMockModelSettingsAdapter } from "../adapters/mock";
 import type { ModelSelection } from "../core/types";
 import { ModelSettingsPanel } from "../react/model-settings-panel";
 import "../react/styles.css";
+import "../../examples/theme.css";
 import "./styles.css";
 
 const adapter = createMockModelSettingsAdapter({

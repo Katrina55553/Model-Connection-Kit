@@ -1,7 +1,9 @@
 :root {
-  --mck-color-accent: #8f83e8;
+  --mck-color-accent: #6250b6;
+  --mck-color-accent-solid: var(--mck-color-accent);
+  --mck-color-on-accent: #ffffff;
   --mck-color-text: #262431;
-  --mck-color-muted: #817f8c;
+  --mck-color-muted: #625f70;
   --mck-color-border: #e9e7ef;
   --mck-color-surface: #ffffff;
   --mck-color-soft: #f7f5ff;
@@ -121,8 +123,8 @@
 }
 
 .mck-panel footer button:last-child {
-  color: white;
-  background: var(--mck-color-accent);
+  color: var(--mck-color-on-accent);
+  background: var(--mck-color-accent-solid);
 }
 
 .mck-panel button:disabled {

@@ -5,9 +5,10 @@
   --mck-radius-panel: 18px;
 }
 
-/* Illustrative dark palette; review fixed status/button colors before production use. */
+/* AA-contrast dark palette for the component's normal text. */
 body[data-mck-theme="dark"] {
   --mck-color-accent: #9c8df0;
+  --mck-color-accent-solid: #6250b6;
   --mck-color-text: #efedf7;
   --mck-color-muted: #b9b4ca;
   --mck-color-border: #494354;
