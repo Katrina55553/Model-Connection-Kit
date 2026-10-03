@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const libraryCss = readFileSync(resolve("src/react/styles.css"), "utf8");
+const moduleCss = readFileSync(resolve("src/react/model-settings.module.css"), "utf8");
 const exampleCss = readFileSync(resolve("examples/theme.css"), "utf8");
 
 function declarations(css: string, selector: string): Record<string, string> {
@@ -36,6 +37,8 @@ function expectTextContrast(theme: Record<string, string>) {
   expect(contrast(theme, "--mck-color-on-accent", "--mck-color-accent-solid")).toBeGreaterThanOrEqual(4.5);
   expect(contrast(theme, "--mck-color-muted", "--mck-color-surface")).toBeGreaterThanOrEqual(4.5);
   expect(contrast(theme, "--mck-color-muted", "--mck-color-soft")).toBeGreaterThanOrEqual(4.5);
+  expect(contrast(theme, "--mck-color-danger", "--mck-color-surface")).toBeGreaterThanOrEqual(4.5);
+  expect(contrast(theme, "--mck-color-danger", "--mck-color-soft")).toBeGreaterThanOrEqual(4.5);
 }
 
 describe("theme contrast", () => {
@@ -52,7 +55,10 @@ describe("theme contrast", () => {
     expectTextContrast(exampleDark);
   });
 
-  it("uses the solid accent token for primary button backgrounds", () => {
-    expect(libraryCss).toContain("background: var(--mck-color-accent-solid)");
+  it("routes primary buttons and every error-text path through semantic tokens", () => {
+    expect(libraryCss).toMatch(/\.mck-panel footer button:last-child\s*\{[^}]*background:\s*var\(--mck-color-accent-solid\)/s);
+    expect(libraryCss).toMatch(/\.mck-probe-unreachable,\s*\.mck-panel \[role="alert"\]\s*\{[^}]*color:\s*var\(--mck-color-danger\)/s);
+    expect(moduleCss).toMatch(/\.error\s*\{[^}]*color:\s*var\(--mck-color-danger\)/s);
+    expect(moduleCss).not.toContain("#a23838");
   });
 });

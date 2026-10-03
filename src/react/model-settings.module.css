@@ -78,7 +78,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  color: #a23838;
+  color: var(--mck-color-danger);
 }
 
 .error button {

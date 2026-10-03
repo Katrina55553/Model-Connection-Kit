@@ -4,6 +4,7 @@
   --mck-color-on-accent: #ffffff;
   --mck-color-text: #262431;
   --mck-color-muted: #625f70;
+  --mck-color-danger: #a23838;
   --mck-color-border: #e9e7ef;
   --mck-color-surface: #ffffff;
   --mck-color-soft: #f7f5ff;
@@ -112,7 +113,7 @@
 
 .mck-probe-unreachable,
 .mck-panel [role="alert"] {
-  color: #a23838;
+  color: var(--mck-color-danger);
 }
 
 .mck-panel footer {

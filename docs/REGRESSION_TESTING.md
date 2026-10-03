@@ -20,7 +20,7 @@ npm run test:integration
 | `src/react/model-settings-regression.test.tsx` | 保存模型恢复、等价 props 保留草稿、快速切换 provider 的乱序响应、切换 tab 取消授权、旧探测与迟到事件隔离、独立认证检查、外部 prompt 取消、关闭弹窗取消 prompt、超时重试、旧保存不关闭新弹窗 |
 | `src/react/model-settings-dialog.test.tsx` | Escape、反复 Tab/Shift+Tab 的焦点陷阱、关闭后的焦点回收 |
 | `src/react/model-settings-accessibility.test.tsx` | 三种 tabpanel 的关联标签、Dialog 名称与描述、axe-core 语义检查 |
-| `src/react/theme-contrast.test.ts` | 默认与示例亮暗主题的普通文字 WCAG AA 对比度、主按钮语义色使用 |
+| `src/react/theme-contrast.test.ts` | 默认与示例亮暗主题的普通及错误文字 WCAG AA 对比度、主按钮和错误文字语义色使用 |
 | `src/adapters/pi-ai/pi-ai-adapter.test.ts`、`pi-ai-contract.test.ts`、`operation.test.ts` | fake/真实 Models 契约、凭证来源、logout 后 ambient fallback、交互能力、prompt/event、动态目录、取消、探测失败与截止时间 |
 | `src/core/backend-proxy.test.ts`、`backend-proxy-transport.test.ts`、`validate-custom-endpoint.test.ts` | URL 与元数据校验、精确 allowlist、公网 DNS 校验、地址固定、拒绝重定向和私网目标 |
 
@@ -31,6 +31,8 @@ npm run test:integration
 ## 阶段 9 结果与边界
 
 2026-10-02：151 项默认测试通过，2 项显式集成测试在默认套件中跳过；类型检查、双入口构建和 2 项本地真实 SSE 集成测试通过。
+
+2026-10-03：154 项默认测试通过，2 项显式集成测试跳过。真实 Chromium + axe-core 4.13 在 872×765、100% 缩放下复验亮暗主题的三个 tabpanel：亮色普通文字违规清零；暗色主按钮从 2.8:1 提升到 6.28:1，校验错误文字从 2.37:1 提升到 6.65:1。AAA、交互状态、非文本对比度、缩放和屏幕阅读器不在本轮声明范围内。
 
 回归修复了保存模型被首项替换、等价 props 重置草稿/重读目录、旧认证检查覆盖登录状态、模型目录失败隐藏认证状态、切换目标未取消操作、登录完成后事件污染、旧保存关闭新弹窗、标签页缺少关联 panel 和授权 prompt 未获取焦点的问题。公共适配器接口与秘密边界保持不变。
 

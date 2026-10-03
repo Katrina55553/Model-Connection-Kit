@@ -11,6 +11,7 @@ body[data-mck-theme="dark"] {
   --mck-color-accent-solid: #6250b6;
   --mck-color-text: #efedf7;
   --mck-color-muted: #b9b4ca;
+  --mck-color-danger: #f28b8b;
   --mck-color-border: #494354;
   --mck-color-surface: #24212c;
   --mck-color-soft: #302a3f;

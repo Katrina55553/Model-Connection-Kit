@@ -9,6 +9,7 @@
 | `--mck-color-on-accent` | `#ffffff` | 主操作背景上的文字 |
 | `--mck-color-text` | `#262431` | 正文 |
 | `--mck-color-muted` | `#625f70` | 辅助文字 |
+| `--mck-color-danger` | `#a23838` | 错误与连接失败文字 |
 | `--mck-color-border` | `#e9e7ef` | 边框 |
 | `--mck-color-surface` | `#ffffff` | 面板与输入背景 |
 | `--mck-color-soft` | `#f7f5ff` | 标签、提示区域背景 |
@@ -28,10 +29,11 @@
 body[data-mck-theme="dark"] {
   --mck-color-accent: #9c8df0;
   --mck-color-accent-solid: #6250b6;
+  --mck-color-danger: #f28b8b;
 }
 ```
 
-可复制 [主题示例](../examples/theme.css)，在库 CSS 后导入。demo 已显式导入该文件，因此设置 `body[data-mck-theme="dark"]` 会立即应用暗色变量。强调文字与主操作背景使用不同变量，避免暗色主题为了提高文字可读性而把按钮背景一并调亮。示例主题的普通文字已达到 WCAG AA 对比度；错误/成功颜色、交互状态和边框仍需宿主结合最终页面复核。
+可复制 [主题示例](../examples/theme.css)，在库 CSS 后导入。demo 已显式导入该文件，因此设置 `body[data-mck-theme="dark"]` 会立即应用暗色变量。强调文字与主操作背景使用不同变量，避免暗色主题为了提高文字可读性而把按钮背景一并调亮。示例主题的普通文字和错误文字已达到 WCAG AA 对比度；成功颜色、交互状态和边框仍需宿主结合最终页面复核。
 
 仅对 Panel 设置 `className` 可以作用于内嵌内容，但 Select 菜单和 Dialog 使用挂载到 body 的 Radix Portal，不继承局部祖先变量。希望菜单/弹窗一致时将主题变量放在 `:root` 或 `body`（例如 `body[data-mck-theme="dark"]`），不要只放在 React 应用容器上。
 
